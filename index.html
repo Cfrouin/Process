@@ -2853,7 +2853,7 @@
             } else {
                 state.cellData = { wl: wls, curr: currs };
                 state.cellName = files[0].name.replace("200-580", "").replace("560-1100", "").replace(/_-\s*$/, "").replace(".csv", "").replace(".txt", "");
-                document.getElementById('status-cell').innerText = `Cell: ${state.cellName} Merged ✅`;
+                document.getElementById('status-cell').innerText = `Cell Merged Successfully ✅`;
                 document.getElementById('status-cell').style.color = "var(--success)";
                 document.getElementById('btn-exp-mcell').disabled = false;
             }
