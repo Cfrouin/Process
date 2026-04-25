@@ -1,671 +1,184 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EQE & Jsc Calculator</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');
-
-  :root {
-    --bg: #0d0f14;
-    --panel: #13161e;
-    --card: #1a1e28;
-    --border: #252a38;
-    --accent: #00e5a0;
-    --accent2: #3d7aff;
-    --accent3: #ff6b35;
-    --text: #e8ecf4;
-    --muted: #5a6480;
-    --success: #00c47d;
-    --warning: #ffb830;
-    --error: #ff4757;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Background grid effect */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
-
-  /* Header */
-  header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
-  .logo-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(0,229,160,0.08);
-    border: 1px solid rgba(0,229,160,0.2);
-    border-radius: 4px;
-    padding: 6px 14px;
-    margin-bottom: 20px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
-
-  .logo-badge::before {
-    content: '◆';
-    font-size: 8px;
-  }
-
-  h1 {
-    font-size: clamp(28px, 5vw, 48px);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 12px;
-  }
-
-  .subtitle {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-  }
-
-  /* Section titles */
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    margin-bottom: 14px;
-  }
-
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .section-num {
-    color: var(--accent);
-    background: rgba(0,229,160,0.1);
-    padding: 2px 7px;
-    border-radius: 3px;
-  }
-
-  /* Cards */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 16px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-
-  .card:hover {
-    border-color: rgba(0,229,160,0.2);
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent2), var(--accent), transparent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .card:hover::before { opacity: 1; }
-
-  /* Import rows */
-  .import-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .import-row + .import-row { margin-top: 16px; }
-
-  /* File input wrapper */
-  .file-wrapper {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-  }
-
-  .file-wrapper input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-  }
-
-  .file-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 18px;
-    background: rgba(61,122,255,0.1);
-    border: 1px solid rgba(61,122,255,0.3);
-    border-radius: 6px;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--accent2);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .file-btn:hover {
-    background: rgba(61,122,255,0.18);
-    border-color: var(--accent2);
-  }
-
-  .file-btn .icon { font-size: 16px; }
-
-  .file-status {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 6px;
-    min-height: 16px;
-    transition: color 0.2s;
-  }
-
-  .file-status.ok { color: var(--success); }
-  .file-status.err { color: var(--error); }
-
-  /* Buttons */
-  .btn {
-    padding: 10px 18px;
-    border: 1px solid;
-    border-radius: 6px;
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-  }
-
-  .btn-export {
-    background: rgba(90,100,128,0.15);
-    border-color: var(--border);
-    color: var(--muted);
-  }
-
-  .btn-export:hover {
-    background: rgba(90,100,128,0.3);
-    color: var(--text);
-    border-color: var(--muted);
-  }
-
-  .btn-export:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  /* Parameters grid */
-  .params-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr) auto;
-    gap: 16px;
-    align-items: end;
-  }
-
-  @media (max-width: 600px) {
-    .params-grid { grid-template-columns: 1fr 1fr; }
-  }
-
-  .param-group label {
-    display: block;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 6px;
-  }
-
-  .param-group input {
-    width: 100%;
-    padding: 9px 12px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-
-  .param-group input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(0,229,160,0.1);
-  }
-
-  .btn-update {
-    background: rgba(0,229,160,0.12);
-    border-color: rgba(0,229,160,0.4);
-    color: var(--accent);
-    font-size: 12px;
-    padding: 10px 20px;
-  }
-
-  .btn-update:hover {
-    background: rgba(0,229,160,0.2);
-    border-color: var(--accent);
-  }
-
-  /* Jsc display */
-  .jsc-display {
-    text-align: center;
-    padding: 28px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .jsc-display::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 50% 100%, rgba(0,229,160,0.05) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .jsc-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    margin-bottom: 8px;
-  }
-
-  .jsc-value {
-    font-family: var(--mono);
-    font-size: clamp(36px, 6vw, 64px);
-    font-weight: 700;
-    color: var(--accent3);
-    line-height: 1;
-    letter-spacing: -0.03em;
-    transition: all 0.4s;
-  }
-
-  .jsc-value.active {
-    text-shadow: 0 0 40px rgba(255,107,53,0.4);
-  }
-
-  .jsc-unit {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-
-  /* Step indicator */
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  .step-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--muted);
-    flex-shrink: 0;
-  }
-
-  .step-dot.ok { background: var(--success); }
-  .step-dot.err { background: var(--error); }
-  .step-dot.info { background: var(--accent2); }
-
-  /* Export actions */
-  .export-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  @media (max-width: 500px) { .export-grid { grid-template-columns: 1fr; } }
-
-  .btn-main {
-    padding: 16px 24px;
-    border-radius: 8px;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  .btn-main:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    transform: none !important;
-  }
-
-  .btn-green {
-    background: linear-gradient(135deg, #00c47d, #00a86b);
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(0,196,125,0.25);
-  }
-
-  .btn-green:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 28px rgba(0,196,125,0.35);
-  }
-
-  .btn-purple {
-    background: linear-gradient(135deg, #7c3aed, #5b21b6);
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(124,58,237,0.25);
-  }
-
-  .btn-purple:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 28px rgba(124,58,237,0.35);
-  }
-
-  /* Toast */
-  .toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .toast {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 18px;
-    font-family: var(--mono);
-    font-size: 12px;
-    max-width: 340px;
-    animation: slideIn 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-
-  .toast.success { border-left: 3px solid var(--success); }
-  .toast.error { border-left: 3px solid var(--error); color: var(--error); }
-  .toast.warning { border-left: 3px solid var(--warning); }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  /* Constants info */
-  .constants-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-
-  .const-chip {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 4px 9px;
-  }
-
-  .const-chip span { color: var(--accent); }
-
-  /* Divider */
-  hr {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 24px 0;
-  }
-
-  /* Loading overlay */
-  .loading {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(13,15,20,0.8);
-    backdrop-filter: blur(4px);
-    z-index: 999;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .loading.show { display: flex; }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-text {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EQE & Jsc Calculator Web</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --panel-bg: #ffffff;
+            --primary: #17A2B8;
+            --success: #28a745;
+            --purple: #8E44AD;
+            --gray: #5D6D7E;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --border: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 { margin-top: 0; color: #2c3e50; }
+
+        .flex-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            flex: 1;
+            background-color: #f0fbfc;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .upload-box:hover { background-color: #e0f4f7; }
+        .upload-box input[type="file"] {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer;
+        }
+
+        .status-text { font-size: 0.9em; color: var(--text-muted); margin-top: 10px; display: block; }
+        .step-info { font-size: 0.9em; font-style: italic; color: #0056b3; margin: 10px 0; font-weight: bold; }
+
+        .params-box {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .params-box input {
+            width: 70px; padding: 5px; margin-left: 5px; border: 1px solid #ccc;
+            border-radius: 4px; text-align: center; font-weight: bold;
+        }
+
+        .jsc-display {
+            font-size: 1.8em; font-weight: bold; color: #D35400; margin: 15px 0;
+        }
+
+        button {
+            border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px;
+            font-weight: bold; cursor: pointer; transition: opacity 0.2s ease;
+            color: white; margin: 5px;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { background-color: #cccccc !important; cursor: not-allowed; }
+
+        .btn-update { background-color: var(--primary); }
+        .btn-export { background-color: var(--success); width: 45%; padding: 12px; font-size: 14px; }
+        .btn-sheet { background-color: var(--purple); width: 45%; padding: 12px; font-size: 14px; }
+        .btn-secondary { background-color: var(--gray); font-size: 12px; }
+
+        /* Conteneur pour forcer le ratio du graphique */
+        .plot-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            background-color: white;
+            padding: 20px;
+        }
+
+        /* Ratio 1:1.4 (ex: Hauteur 500px, Largeur 700px) */
+        #plot-div {
+            width: 700px;
+            height: 500px;
+        }
+
+    </style>
 </head>
 <body>
 
 <div class="container">
-
-  <header>
-    <div class="logo-badge">v2.0 — Web Edition</div>
     <h1>EQE & Jsc Calculator</h1>
-    <p class="subtitle">External Quantum Efficiency · Solar Cell Spectral Response · AM1.5G Integration</p>
-  </header>
 
-  <!-- SECTION 1: IMPORT -->
-  <div class="section-label"><span class="section-num">01</span> Import des données</div>
-
-  <div class="card">
-    <!-- Reference -->
-    <div class="import-row">
-      <div>
-        <div style="font-size:12px; color:var(--muted); font-family:var(--mono); margin-bottom:8px; text-transform:uppercase; letter-spacing:.1em;">Référence (2 fichiers : 200-580 + 560-1100)</div>
-        <div class="file-wrapper">
-          <input type="file" id="refFiles" accept=".txt,.csv" multiple>
-          <div class="file-btn"><span class="icon">📂</span>Import Reference Current</div>
+    <div class="flex-row">
+        <div class="upload-box">
+            <span style="font-weight: bold; color: var(--primary);">📁 Import Reference (2 files)</span>
+            <input type="file" id="file-ref" multiple accept=".txt,.csv">
+            <span class="status-text" id="status-ref">No Ref loaded</span>
         </div>
-        <div class="file-status" id="refStatus">Aucun fichier chargé</div>
-      </div>
-      <button class="btn btn-export" id="btnExportRef" disabled onclick="exportMergedRef()">
-        ↓ Export Merged Ref
-      </button>
-    </div>
-
-    <hr>
-
-    <!-- Cell -->
-    <div class="import-row">
-      <div>
-        <div style="font-size:12px; color:var(--muted); font-family:var(--mono); margin-bottom:8px; text-transform:uppercase; letter-spacing:.1em;">Cellule (2 fichiers : 200-580 + 560-1100)</div>
-        <div class="file-wrapper">
-          <input type="file" id="cellFiles" accept=".txt,.csv" multiple>
-          <div class="file-btn"><span class="icon">📂</span>Import Cell Current</div>
+        <div class="upload-box">
+            <span style="font-weight: bold; color: var(--primary);">📁 Import Cell (2 files)</span>
+            <input type="file" id="file-cell" multiple accept=".txt,.csv">
+            <span class="status-text" id="status-cell">No Cell loaded</span>
         </div>
-        <div class="file-status" id="cellStatus">Aucun fichier chargé</div>
-      </div>
-      <button class="btn btn-export" id="btnExportCell" disabled onclick="exportMergedCell()">
-        ↓ Export Merged Cell
-      </button>
-    </div>
-  </div>
-
-  <!-- Step indicator -->
-  <div class="step-indicator" id="stepIndicator">
-    <div class="step-dot" id="stepDot"></div>
-    <span id="stepText">Step détecté : ---</span>
-  </div>
-
-  <!-- SECTION 2: PARAMS -->
-  <div class="section-label"><span class="section-num">02</span> Paramètres d'intégration</div>
-
-  <div class="card">
-    <div class="params-grid">
-      <div class="param-group">
-        <label>λ Min (nm)</label>
-        <input type="number" id="wlMin" value="300" step="1">
-      </div>
-      <div class="param-group">
-        <label>λ Max (nm)</label>
-        <input type="number" id="wlMax" value="1000" step="1">
-      </div>
-      <div class="param-group">
-        <label>Step (nm)</label>
-        <input type="number" id="stepUser" value="2" step="0.5" min="0.5">
-      </div>
-      <button class="btn btn-update" onclick="updateJsc()">↻ Update</button>
     </div>
 
-    <div class="constants-row" style="margin-top:16px;">
-      <div class="const-chip">h = <span>6.62607015×10⁻³⁴</span> J·s</div>
-      <div class="const-chip">c = <span>299 792 458</span> m/s</div>
-      <div class="const-chip">e = <span>1.602176634×10⁻¹⁹</span> C</div>
+    <div id="step-detected" class="step-info">Step detected: --- nm</div>
+
+    <div class="params-box">
+        <label>Min: <input type="number" id="param-min" value="300"></label>
+        <label>Max: <input type="number" id="param-max" value="1000"></label>
+        <label>Step (nm): <input type="number" id="param-step" value="2" step="0.1"></label>
+        <button class="btn-update" onclick="updateJsc()">↻ Update Jsc & Plot</button>
     </div>
-  </div>
 
-  <!-- SECTION 3: JSC -->
-  <div class="section-label"><span class="section-num">03</span> Résultat</div>
+    <div class="jsc-display" id="jsc-result">Jsc: --- mA/cm²</div>
 
-  <div class="jsc-display">
-    <div class="jsc-label">Densité de courant de court-circuit</div>
-    <div class="jsc-value" id="jscValue">---</div>
-    <div class="jsc-unit">mA / cm²</div>
-  </div>
+    <div>
+        <button class="btn-export" id="btn-exp-data" disabled onclick="exportCSV()">⬇ Export Data (CSV)</button>
+        <button class="btn-sheet" id="btn-exp-sheet" disabled onclick="exportCalculationSheet()">⬇ Export Calculation Sheet</button>
+    </div>
+    
+    <div style="margin-top: 10px;">
+        <button class="btn-secondary" id="btn-exp-mref" disabled onclick="exportMergedData('ref')">Export Merged Ref</button>
+        <button class="btn-secondary" id="btn-exp-mcell" disabled onclick="exportMergedData('cell')">Export Merged Cell</button>
+        <button class="btn-secondary" onclick="exportStringData('Ref_Responsivity.txt', SR_REF_CONST)">Export Ref Specs</button>
+        <button class="btn-secondary" onclick="exportStringData('Irradiance_AM1.5G.txt', AM15G_CONST)">Export AM1.5G Specs</button>
+    </div>
 
-  <!-- SECTION 4: EXPORTS -->
-  <div class="section-label"><span class="section-num">04</span> Exports</div>
-
-  <div class="export-grid" style="margin-bottom:12px;">
-    <button class="btn-main btn-green" id="btnExportData" disabled onclick="exportCSV()">
-      ⬇ Export Data (EQE + Jsc)
-    </button>
-    <button class="btn-main btn-purple" id="btnExportSheet" disabled onclick="exportCalculationSheet()">
-      ⬇ Export Calculation Sheet
-    </button>
-  </div>
-
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <button class="btn btn-export" onclick="exportRefResponsivity()">↓ Ref Responsivity (A/W)</button>
-    <button class="btn btn-export" onclick="exportAM15G()">↓ Irradiance AM1.5G</button>
-  </div>
-
+    <div class="plot-wrapper">
+        <div id="plot-div"></div>
+    </div>
 </div>
-
-<!-- Loading overlay -->
-<div class="loading" id="loadingOverlay">
-  <div class="spinner"></div>
-  <div class="loading-text">Traitement en cours…</div>
-</div>
-
-<!-- Toast container -->
-<div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ==========================================
-// CONSTANTES PHYSIQUES (CODATA EXACT)
-// ==========================================
-const H_PLANCK = 6.62607015e-34;
-const C_LIGHT = 299792458.0;
-const E_CHARGE = 1.602176634e-19;
-const HC_J_NM = H_PLANCK * C_LIGHT * 1e9;
+    // ==========================================
+    // 0. Constantes Physiques
+    // ==========================================
+    const H_PLANCK = 6.62607015e-34;
+    const C_LIGHT = 299792458.0;
+    const E_CHARGE = 1.602176634e-19;
+    const HC_J_NM = H_PLANCK * C_LIGHT * 1e9;
 
-// ==========================================
-// DONNÉES DE RÉFÉRENCE EMBARQUÉES
-// ==========================================
-const SR_REF_DATA = `Wavelength (nm)	responsivity [(A)/(W)]
+    // ==========================================
+    // 1. Constantes Hardcodées
+    // ==========================================
+    
+    // ⬇️ COLLEZ ICI VOTRE FICHIER "Responsivity_Ref.txt" EN ENTIER (entre les backticks ``) ⬇️
+    const SR_REF_CONST = `Wavelength (nm)	responsivity [(A)/(W)]
 200	0.119832402
 202	0.123184358
 204	0.125698324
@@ -1116,10 +629,12 @@ const SR_REF_DATA = `Wavelength (nm)	responsivity [(A)/(W)]
 1094	0.141620112
 1096	0.138268156
 1098	0.13575419
-1100	0.133240223`;
+1100	0.133240223
+`;
 
-// AM1.5G data (subset compact — full data embedded)
-const AM15G_DATA_STR = `280	4.72E-23
+    // ⬇️ COLLEZ ICI VOTRE FICHIER "AM1.5G" EN ENTIER (entre les backticks ``) ⬇️
+    const AM15G_CONST = `Wavelength(nm)	Irradiance(W/m2/nm)
+280	4.72E-23
 280.5	1.23E-21
 281	5.67E-21
 281.5	1.56E-19
@@ -1442,1183 +957,2173 @@ const AM15G_DATA_STR = `280	4.72E-23
 480	1.6134
 481	1.613
 482	1.6189
-483	1.5756
-484	1.5742
-485	1.5768
-486	1.5478
-487	1.5775
-488	1.601
-489	1.6376
-490	1.6474
-491	1.6268
-492	1.5985
-493	1.5499
-494	1.5501
-495	1.603
-496	1.6506
-497	1.6625
-498	1.6428
-499	1.6267
-500	1.6524
-501	1.6769
-502	1.6969
-503	1.7121
-504	1.7046
-505	1.7218
-506	1.7095
-507	1.7013
-508	1.6707
-509	1.6734
-510	1.6845
-511	1.7127
-512	1.7362
-513	1.7437
-514	1.7438
-515	1.7427
-516	1.7441
-517	1.7412
-518	1.7422
-519	1.7384
-520	1.7268
-521	1.717
-522	1.7253
-523	1.7323
-524	1.7332
-525	1.7325
-526	1.7296
-527	1.7249
-528	1.7232
-529	1.7133
-530	1.7082
-531	1.7082
-532	1.7175
-533	1.7199
-534	1.7199
-535	1.7098
-536	1.7038
-537	1.6959
-538	1.7002
-539	1.7055
-540	1.7121
-541	1.714
-542	1.7202
-543	1.7199
-544	1.7208
-545	1.7156
-546	1.7145
-547	1.7101
-548	1.705
-549	1.7013
-550	1.7012
-551	1.7028
-552	1.7005
-553	1.7037
-554	1.7022
-555	1.7006
-556	1.6875
-557	1.6915
-558	1.6894
-559	1.6843
-560	1.6728
-561	1.6744
-562	1.6749
-563	1.676
-564	1.6791
-565	1.6778
-566	1.6836
-567	1.6832
-568	1.6878
-569	1.6911
-570	1.687
-571	1.6848
-572	1.6793
-573	1.6736
-574	1.6697
-575	1.6743
-576	1.6786
-577	1.6741
-578	1.6641
-579	1.6628
-580	1.6637
-581	1.6619
-582	1.6568
-583	1.6575
-584	1.6564
-585	1.6485
-586	1.6482
-587	1.6527
-588	1.6534
-589	1.6517
-590	1.6536
-591	1.6548
-592	1.6562
-593	1.6494
-594	1.6464
-595	1.6464
-596	1.6476
-597	1.6539
-598	1.6516
-599	1.6487
-600	1.6457
-601	1.6413
-602	1.6359
-603	1.6299
-604	1.6303
-605	1.6278
-606	1.6339
-607	1.6388
-608	1.6285
-609	1.6284
-610	1.6246
-611	1.623
-612	1.6203
-613	1.6133
-614	1.6133
-615	1.6115
-616	1.6106
-617	1.6121
-618	1.6094
-619	1.6047
-620	1.597
-621	1.5961
-622	1.5949
-623	1.591
-624	1.5857
-625	1.5818
-626	1.5828
-627	1.5833
-628	1.5756
-629	1.5742
-630	1.5665
-631	1.5634
-632	1.5593
-633	1.5587
-634	1.5531
-635	1.5488
-636	1.5517
-637	1.5515
-638	1.5472
-639	1.5424
-640	1.5386
-641	1.5427
-642	1.5403
-643	1.5338
-644	1.5267
-645	1.5224
-646	1.5221
-647	1.5224
-648	1.5218
-649	1.5182
-650	1.5177
-651	1.5163
-652	1.5173
-653	1.5176
-654	1.5127
-655	1.5046
-656	1.4814
-657	1.4505
-658	1.4247
-659	1.4293
-660	1.4519
-661	1.4731
-662	1.4866
-663	1.4852
-664	1.4761
-665	1.4747
-666	1.4751
-667	1.4737
-668	1.4734
-669	1.4672
-670	1.4686
-671	1.4689
-672	1.4662
-673	1.4642
-674	1.4618
-675	1.4586
-676	1.4569
-677	1.4558
-678	1.4575
-679	1.4581
-680	1.4571
-681	1.4549
-682	1.4502
-683	1.4415
-684	1.4353
-685	1.4378
-686	1.4411
-687	1.4388
-688	1.432
-689	1.4272
-690	1.4202
-691	1.4115
-692	1.3906
-693	1.3702
-694	1.369
-695	1.376
-696	1.3684
-697	1.3584
-698	1.3538
-699	1.3449
-700	1.3396
-701	1.3377
-702	1.3365
-703	1.3352
-704	1.3278
-705	1.3246
-706	1.3234
-707	1.322
-708	1.3214
-709	1.3189
-710	1.315
-711	1.3097
-712	1.3059
-713	1.3051
-714	1.3035
-715	1.2994
-716	1.2981
-717	1.2984
-718	1.296
-719	1.2895
-720	1.2854
-721	1.2816
-722	1.2791
-723	1.2795
-724	1.2782
-725	1.2741
-726	1.2726
-727	1.2699
-728	1.2664
-729	1.2624
-730	1.2592
-731	1.2565
-732	1.2546
-733	1.2511
-734	1.2474
-735	1.244
-736	1.2418
-737	1.239
-738	1.2363
-739	1.2341
-740	1.2309
-741	1.228
-742	1.2262
-743	1.2227
-744	1.2195
-745	1.2171
-746	1.2136
-747	1.2104
-748	1.2073
-749	1.2044
-750	1.2018
-751	1.1988
-752	1.1954
-753	1.1908
-754	1.1875
-755	1.1855
-756	1.1819
-757	1.1787
-758	1.1746
-759	1.1712
-760	1.1672
-761	1.1648
-762	1.1617
-763	1.158
-764	1.1544
-765	1.1497
-766	1.146
-767	1.1429
-768	1.139
-769	1.1347
-770	1.1297
-771	1.1253
-772	1.1214
-773	1.1175
-774	1.1136
-775	1.1095
-776	1.1049
-777	1.0999
-778	1.0957
-779	1.0912
-780	1.0868
-781	1.0826
-782	1.078
-783	1.0732
-784	1.069
-785	1.0651
-786	1.0604
-787	1.0555
-788	1.051
-789	1.0459
-790	1.0411
-791	1.0367
-792	1.0319
-793	1.027
-794	1.0219
-795	1.0166
-796	1.0113
-797	1.0063
-798	1.0016
-799	0.9963
-800	0.9909
-801	0.9858
-802	0.9809
-803	0.9758
-804	0.9703
-805	0.9648
-806	0.96
-807	0.9552
-808	0.9499
-809	0.9447
-810	0.9395
-811	0.9343
-812	0.9284
-813	0.9229
-814	0.9177
-815	0.9126
-816	0.9072
-817	0.9017
-818	0.8964
-819	0.8913
-820	0.8861
-821	0.8812
-822	0.8762
-823	0.8709
-824	0.8658
-825	0.8606
-826	0.8553
-827	0.85
-828	0.8446
-829	0.8391
-830	0.8337
-831	0.8288
-832	0.8241
-833	0.8189
-834	0.8135
-835	0.8078
-836	0.8023
-837	0.797
-838	0.7916
-839	0.7858
-840	0.7799
-841	0.7742
-842	0.769
-843	0.7637
-844	0.758
-845	0.7521
-846	0.7459
-847	0.7397
-848	0.7335
-849	0.7273
-850	0.7209
-851	0.7146
-852	0.7082
-853	0.7019
-854	0.6957
-855	0.6892
-856	0.6823
-857	0.6752
-858	0.6682
-859	0.6614
-860	0.6546
-861	0.6474
-862	0.6403
-863	0.6335
-864	0.6267
-865	0.6195
-866	0.612
-867	0.6046
-868	0.5971
-869	0.5898
-870	0.5823
-871	0.5751
-872	0.5676
-873	0.56
-874	0.5524
-875	0.5449
-876	0.5374
-877	0.5302
-878	0.5229
-879	0.5156
-880	0.5082
-881	0.5009
-882	0.4937
-883	0.4866
-884	0.4797
-885	0.4728
-886	0.4657
-887	0.4587
-888	0.4515
-889	0.4445
-890	0.4377
-891	0.4309
-892	0.4242
-893	0.4175
-894	0.4107
-895	0.4041
-896	0.3974
-897	0.3908
-898	0.3841
-899	0.3776
-900	0.3713
-901	0.3651
-902	0.3591
-903	0.3529
-904	0.3467
-905	0.3405
-906	0.3344
-907	0.3284
-908	0.3225
-909	0.3167
-910	0.3108
-911	0.305
-912	0.2993
-913	0.2937
-914	0.2882
-915	0.2827
-916	0.2773
-917	0.2719
-918	0.2667
-919	0.2617
-920	0.2566
-921	0.2516
-922	0.2468
-923	0.2422
-924	0.2375
-925	0.2329
-926	0.2283
-927	0.2238
-928	0.2193
-929	0.2148
-930	0.2103
-931	0.2059
-932	0.2015
-933	0.1973
-934	0.1931
-935	0.189
-936	0.185
-937	0.181
-938	0.177
-939	0.1731
-940	0.1693
-941	0.1657
-942	0.1621
-943	0.1585
-944	0.155
-945	0.1514
-946	0.148
-947	0.1447
-948	0.1416
-949	0.1385
-950	0.1355
-951	0.1325
-952	0.1296
-953	0.1267
-954	0.1238
-955	0.121
-956	0.1183
-957	0.1157
-958	0.1131
-959	0.1105
-960	0.108
-961	0.1055
-962	0.1031
-963	0.1008
-964	0.0986
-965	0.0963
-966	0.0941
-967	0.092
-968	0.09
-969	0.088
-970	0.086
-971	0.084
-972	0.082
-973	0.0801
-974	0.0782
-975	0.0764
-976	0.0745
-977	0.0726
-978	0.0708
-979	0.069
-980	0.0672
-981	0.0654
-982	0.0637
-983	0.062
-984	0.0602
-985	0.0585
-986	0.0568
-987	0.0551
-988	0.0534
-989	0.0517
-990	0.0501
-991	0.0485
-992	0.0469
-993	0.0453
-994	0.0436
-995	0.0419
-996	0.0403
-997	0.0387
-998	0.0371
-999	0.0355
-1000	0.034
-1001	0.0325
-1002	0.0309
-1003	0.0294
-1004	0.0278
-1005	0.0262
-1006	0.0247
-1007	0.0231
-1008	0.0216
-1009	0.02
-1010	0.0185
-1011	0.017
-1012	0.0154
-1013	0.0139
-1014	0.0124
-1015	0.0108
-1016	0.0093
-1017	0.0078
-1018	0.0062
-1019	0.0047
-1020	0.0032
-1021	0.0017
-1022	0.0002
-1023	0
-1024	0
-1025	0
-1026	0
-1027	0
-1028	0
-1029	0
-1030	0
-1035	0.0037
-1040	0.0064
-1045	0.0105
-1050	0.0085
-1055	0.0112
-1060	0.0102
-1065	0.0066
-1070	0.0047
-1075	0.0055
-1080	0.0067
-1085	0.0046
-1090	0.0074
-1095	0.0078
-1100	0.006
-1105	0.0077
-1110	0.0065
-1115	0.0064
-1120	0.0039
-1125	0.0018
-1130	0.0003
-1135	0.0003
-1140	0.0017
-1145	0.0084
-1150	0.0133
-1155	0.0241
-1160	0.0371
-1165	0.0488
-1170	0.0485
-1175	0.0453
-1180	0.0436
-1185	0.0428
-1190	0.0407
-1195	0.0349
-1200	0.0297
-1205	0.0262
-1210	0.0228
-1215	0.0194
-1220	0.016
-1225	0.0125
-1230	0.0091
-1235	0.0056
-1240	0.0022
-1245	0
-1250	0.0029
-1255	0.0041
-1260	0.0061
-1265	0.0068
-1270	0.0163
-1275	0.0405
-1280	0.0747
-1285	0.1209
-1290	0.1661
-1295	0.1979
-1300	0.2038
-1305	0.2003
-1310	0.1913
-1315	0.1785
-1320	0.1628
-1325	0.1465
-1330	0.1301
-1335	0.1137
-1340	0.0972
-1345	0.0807
-1350	0.0642
-1355	0.0477
-1360	0.0313
-1365	0.0148
+483	1.5991
+484	1.5688
+485	1.5638
+486	1.2679
+487	1.42
+488	1.5368
+489	1.4477
+490	1.6177
+491	1.555
+492	1.4826
+493	1.5857
+494	1.548
+495	1.6437
+496	1.5631
+497	1.5898
+498	1.5464
+499	1.5462
+500	1.5406
+501	1.4935
+502	1.4923
+503	1.5608
+504	1.4545
+505	1.559
+506	1.6217
+507	1.5515
+508	1.5121
+509	1.5847
+510	1.5436
+511	1.5723
+512	1.6139
+513	1.5162
+514	1.4842
+515	1.527
+516	1.541
+517	1.2557
+518	1.4361
+519	1.3917
+520	1.5192
+521	1.5301
+522	1.5644
+523	1.4746
+524	1.5859
+525	1.5735
+526	1.5297
+527	1.3378
+528	1.5312
+529	1.6024
+530	1.5401
+531	1.6245
+532	1.5952
+533	1.4245
+534	1.5258
+535	1.549
+536	1.6152
+537	1.4946
+538	1.5692
+539	1.5307
+540	1.4782
+541	1.421
+542	1.5466
+543	1.5212
+544	1.5746
+545	1.539
+546	1.5247
+547	1.5445
+548	1.5005
+549	1.5475
+550	1.5354
+551	1.5337
+552	1.5651
+553	1.5206
+554	1.5504
+555	1.5589
+556	1.5321
+557	1.4945
+558	1.5266
+559	1.4441
+560	1.4697
+561	1.555
+562	1.4804
+563	1.5363
+564	1.5062
+565	1.5157
+566	1.4332
+567	1.5276
+568	1.5136
+569	1.4764
+570	1.4773
+571	1.4289
+572	1.509
+573	1.5154
+574	1.5075
+575	1.4734
+576	1.4612
+577	1.4979
+578	1.4518
+579	1.4727
+580	1.4976
+581	1.5045
+582	1.5276
+583	1.5434
+584	1.5403
+585	1.528
+586	1.491
+587	1.5237
+588	1.4891
+589	1.2857
+590	1.3669
+591	1.4619
+592	1.4312
+593	1.4519
+594	1.4449
+595	1.4267
+596	1.4702
+597	1.4745
+598	1.4565
+599	1.4564
+600	1.471
+601	1.4537
+602	1.4318
+603	1.4621
+604	1.4878
+605	1.4852
+606	1.4779
+607	1.4868
+608	1.4819
+609	1.4706
+610	1.4643
+611	1.4569
+612	1.4788
+613	1.4579
+614	1.4135
+615	1.4654
+616	1.4269
+617	1.4087
+618	1.4621
+619	1.469
+620	1.4696
+621	1.4759
+622	1.4228
+623	1.4124
+624	1.4077
+625	1.3985
+626	1.3971
+627	1.4375
+628	1.3591
+629	1.4073
+630	1.3884
+631	1.412
+632	1.3598
+633	1.4466
+634	1.4243
+635	1.4416
+636	1.4087
+637	1.4568
+638	1.4664
+639	1.4604
+640	1.4298
+641	1.4306
+642	1.4334
+643	1.4483
+644	1.442
+645	1.4525
+646	1.4109
+647	1.4045
+648	1.3912
+649	1.348
+650	1.3555
+651	1.4405
+652	1.3831
+653	1.4269
+654	1.4112
+655	1.346
+656	1.1817
+657	1.2357
+658	1.3815
+659	1.3865
+660	1.3951
+661	1.3893
+662	1.3779
+663	1.3804
+664	1.3926
+665	1.4173
+666	1.4162
+667	1.4061
+668	1.4109
+669	1.4352
+670	1.4155
+671	1.4128
+672	1.3931
+673	1.4053
+674	1.4033
+675	1.3918
+676	1.4079
+677	1.395
+678	1.4025
+679	1.3907
+680	1.3928
+681	1.3875
+682	1.394
+683	1.379
+684	1.3699
+685	1.3708
+686	1.3399
+687	0.9654
+688	1.1174
+689	1.1245
+690	1.1787
+691	1.2297
+692	1.2652
+693	1.2572
+694	1.2428
+695	1.2677
+696	1.2647
+697	1.3364
+698	1.3154
+699	1.2881
+700	1.2786
+701	1.2622
+702	1.2637
+703	1.271
+704	1.304
+705	1.3176
+706	1.3106
+707	1.3052
+708	1.301
+709	1.3057
+710	1.3137
+711	1.3117
+712	1.3033
+713	1.2881
+714	1.2991
+715	1.255
+716	1.2679
+717	1.1039
+718	1.0266
+719	0.9205
+720	0.9826
+721	1.083
+722	1.2371
+723	1.1411
+724	1.0524
+725	1.035
+726	1.0782
+727	1.0819
+728	1.037
+729	1.0436
+730	1.1252
+731	1.0672
+732	1.1501
+733	1.1927
+734	1.2321
+735	1.2143
+736	1.2024
+737	1.2004
+738	1.2233
+739	1.187
+740	1.216
+741	1.2113
+742	1.2118
+743	1.2369
+744	1.2467
+745	1.2461
+746	1.2434
+747	1.2441
+748	1.2365
+749	1.2321
+750	1.2305
+751	1.225
+752	1.2294
+753	1.223
+754	1.2384
+755	1.2347
+756	1.2197
+757	1.2186
+758	1.2259
+759	1.191
+760	0.2653
+761	0.1535
+762	0.6857
+763	0.3784
+764	0.5372
+765	0.684
+766	0.8122
+767	0.9713
+768	1.1106
+769	1.1245
+770	1.1574
+771	1.1652
+772	1.1744
+773	1.1737
+774	1.1737
+775	1.1737
+776	1.1764
+777	1.1693
+778	1.1679
+779	1.1731
+780	1.1602
+781	1.1573
+782	1.1628
+783	1.158
+784	1.1503
+785	1.1552
+786	1.1558
+787	1.1417
+788	1.1272
+789	1.1224
+790	1.0878
+791	1.1026
+792	1.0921
+793	1.0843
+794	1.094
+795	1.09
+796	1.0711
+797	1.0881
+798	1.1089
+799	1.0873
+800	1.0694
+801	1.0812
+802	1.0825
+803	1.0626
+804	1.0751
+805	1.0514
+806	1.0942
+807	1.0828
+808	1.079
+809	1.0517
+810	1.0528
+811	1.0502
+812	1.0238
+813	1.0057
+814	0.9009
+815	0.8926
+816	0.8297
+817	0.8494
+818	0.8202
+819	0.9026
+820	0.8594
+821	0.9947
+822	0.9488
+823	0.6708
+824	0.9323
+825	0.9665
+826	0.9311
+827	0.9818
+828	0.8473
+829	0.9266
+830	0.9134
+831	0.9212
+832	0.8917
+833	0.9537
+834	0.9314
+835	1.0003
+836	0.9695
+837	1.0063
+838	0.9961
+839	0.9984
+840	1.0128
+841	1.0072
+842	0.9941
+843	1.0024
+844	0.9834
+845	1.0136
+846	1.0157
+847	0.9888
+848	0.9893
+849	0.9831
+850	0.8911
+851	0.9721
+852	0.9665
+853	0.9621
+854	0.8487
+855	0.9104
+856	0.9703
+857	0.9888
+858	0.9891
+859	0.9888
+860	0.9853
+861	0.9839
+862	0.9916
+863	0.9976
+864	0.9763
+865	0.9604
+866	0.8465
+867	0.9128
+868	0.9564
+869	0.9468
+870	0.9647
+871	0.9511
+872	0.9641
+873	0.9544
+874	0.9377
+875	0.9242
+876	0.95
+877	0.9534
+878	0.9496
+879	0.9338
+880	0.9368
+881	0.906
+882	0.9297
+883	0.9266
+884	0.9303
+885	0.9415
+886	0.9049
+887	0.908
+888	0.9196
+889	0.9318
+890	0.9213
+891	0.9232
+892	0.9062
+893	0.8707
+894	0.8488
+895	0.8112
+896	0.7603
+897	0.6637
+898	0.7157
+899	0.5471
+900	0.7404
+901	0.5976
+902	0.666
+903	0.6869
+904	0.8421
+905	0.8147
+906	0.7733
+907	0.6367
+908	0.6503
+909	0.7023
+910	0.6229
+911	0.6661
+912	0.6869
+913	0.6265
+914	0.6247
+915	0.6764
+916	0.5748
+917	0.7281
+918	0.591
+919	0.7366
+920	0.742
+921	0.7782
+922	0.6982
+923	0.7429
+924	0.7194
+925	0.709
+926	0.7013
+927	0.7851
+928	0.588
+929	0.5497
+930	0.4308
+931	0.408
+932	0.3
+933	0.2477
+934	0.1434
+935	0.2501
+936	0.161
+937	0.1629
+938	0.2
+939	0.3977
+940	0.4704
+941	0.3709
+942	0.4041
+943	0.2775
+944	0.285
+945	0.3671
+946	0.194
+947	0.37
+948	0.2734
+949	0.4925
+950	0.1468
+951	0.4824
+952	0.2681
+953	0.3426
+954	0.4229
+955	0.3402
+956	0.3273
+957	0.2699
+958	0.4597
+959	0.3728
+960	0.4194
+961	0.4599
+962	0.4405
+963	0.5036
+964	0.4573
+965	0.5023
+966	0.5013
+967	0.5009
+968	0.6502
+969	0.6842
+970	0.6328
+971	0.7119
+972	0.6857
+973	0.6047
+974	0.5736
+975	0.5882
+976	0.5703
+977	0.6368
+978	0.6133
+979	0.6363
+980	0.6029
+981	0.7113
+982	0.6902
+983	0.6667
+984	0.7352
+985	0.6862
+986	0.7487
+987	0.7371
+988	0.7325
+989	0.7469
+990	0.7301
+991	0.7514
+992	0.7488
+993	0.7351
+994	0.7519
+995	0.7496
+996	0.7467
+997	0.7376
+998	0.7367
+999	0.7364
+1000	0.7332
+1001	0.7423
+1002	0.7259
+1003	0.7323
+1004	0.7213
+1005	0.6798
+1006	0.7105
+1007	0.7254
+1008	0.7247
+1009	0.7176
+1010	0.7171
+1011	0.7207
+1012	0.7167
+1013	0.7155
+1014	0.7186
+1015	0.7061
+1016	0.7092
+1017	0.7013
+1018	0.7121
+1019	0.6868
+1020	0.6969
+1021	0.6997
+1022	0.6877
+1023	0.6931
+1024	0.6886
+1025	0.6955
+1026	0.6943
+1027	0.691
+1028	0.6918
+1029	0.6843
+1030	0.6885
+1031	0.6854
+1032	0.6859
+1033	0.6742
+1034	0.6782
+1035	0.6804
+1036	0.68
+1037	0.673
+1038	0.6698
+1039	0.6744
+1040	0.6698
+1041	0.6698
+1042	0.6701
+1043	0.6633
+1044	0.6664
+1045	0.6626
+1046	0.6453
+1047	0.655
+1048	0.6608
+1049	0.657
+1050	0.6527
+1051	0.6533
+1052	0.6493
+1053	0.6473
+1054	0.6446
+1055	0.6466
+1056	0.6445
+1057	0.643
+1058	0.6363
+1059	0.617
+1060	0.634
+1061	0.6194
+1062	0.6308
+1063	0.6206
+1064	0.6301
+1065	0.6273
+1066	0.6153
+1067	0.6185
+1068	0.6176
+1069	0.5846
+1070	0.6029
+1071	0.6148
+1072	0.6136
+1073	0.6019
+1074	0.6198
+1075	0.5908
+1076	0.6129
+1077	0.6026
+1078	0.6015
+1079	0.603
+1080	0.5955
+1081	0.5791
+1082	0.5877
+1083	0.5964
+1084	0.5768
+1085	0.5916
+1086	0.5525
+1087	0.5653
+1088	0.5914
+1089	0.5775
+1090	0.5541
+1091	0.5866
+1092	0.5796
+1093	0.5091
+1094	0.5381
+1095	0.5192
+1096	0.5018
+1097	0.5768
+1098	0.5015
+1099	0.5062
+1100	0.4844
+1101	0.4955
+1102	0.4675
+1103	0.465
+1104	0.4663
+1105	0.505
+1106	0.3968
+1107	0.4816
+1108	0.4144
+1109	0.4116
+1110	0.4776
+1111	0.3306
+1112	0.4124
+1113	0.2677
+1114	0.299
+1115	0.2491
+1116	0.2008
+1117	0.0794
+1118	0.2169
+1119	0.1128
+1120	0.1415
+1121	0.1853
+1122	0.0814
+1123	0.1278
+1124	0.1084
+1125	0.1439
+1126	0.0514
+1127	0.1568
+1128	0.0989
+1129	0.1056
+1130	0.0704
+1131	0.2947
+1132	0.2334
+1133	0.1529
+1134	0.0416
+1135	0.0154
+1136	0.1284
+1137	0.287
+1138	0.2027
+1139	0.2976
+1140	0.2552
+1141	0.1928
+1142	0.2241
+1143	0.3109
+1144	0.1129
+1145	0.1456
+1146	0.1572
+1147	0.059
+1148	0.2703
+1149	0.2179
+1150	0.1213
+1151	0.2028
+1152	0.2469
+1153	0.2374
+1154	0.1421
+1155	0.3123
+1156	0.2801
+1157	0.3137
+1158	0.3108
+1159	0.336
+1160	0.2856
+1161	0.3465
+1162	0.349
+1163	0.4672
+1164	0.4007
+1165	0.3875
+1166	0.3739
+1167	0.4088
+1168	0.4183
+1169	0.4219
+1170	0.4574
+1171	0.447
+1172	0.4535
+1173	0.4551
+1174	0.3359
+1175	0.4511
+1176	0.4754
+1177	0.471
+1178	0.359
+1179	0.4823
+1180	0.4394
+1181	0.4538
+1182	0.3222
+1183	0.4374
+1184	0.4186
+1185	0.4062
+1186	0.4758
+1187	0.4544
+1188	0.3341
+1189	0.4145
+1190	0.461
+1191	0.4453
+1192	0.472
+1193	0.453
+1194	0.4675
+1195	0.4457
+1196	0.4301
+1197	0.4758
+1198	0.4327
+1199	0.3638
+1200	0.447
+1201	0.4358
+1202	0.4359
+1203	0.4328
+1204	0.3614
+1205	0.4357
+1206	0.4795
+1207	0.4286
+1208	0.4322
+1209	0.4131
+1210	0.452
+1211	0.4211
+1212	0.4237
+1213	0.4682
+1214	0.4328
+1215	0.4266
+1216	0.465
+1217	0.454
+1218	0.458
+1219	0.4453
+1220	0.4567
+1221	0.464
+1222	0.4501
+1223	0.4428
+1224	0.4468
+1225	0.461
+1226	0.4668
+1227	0.4318
+1228	0.4652
+1229	0.4659
+1230	0.4587
+1231	0.4707
+1232	0.465
+1233	0.4527
+1234	0.4688
+1235	0.4637
+1236	0.4677
+1237	0.462
+1238	0.4666
+1239	0.4614
+1240	0.4594
+1241	0.4606
+1242	0.4611
+1243	0.4562
+1244	0.454
+1245	0.4552
+1246	0.4581
+1247	0.4561
+1248	0.4573
+1249	0.4583
+1250	0.4557
+1251	0.4513
+1252	0.4497
+1253	0.4464
+1254	0.4423
+1255	0.4494
+1256	0.439
+1257	0.4341
+1258	0.4437
+1259	0.426
+1260	0.4298
+1261	0.4103
+1262	0.3945
+1263	0.399
+1264	0.3704
+1265	0.3946
+1266	0.3842
+1267	0.3871
+1268	0.3694
+1269	0.2458
+1270	0.3863
+1271	0.4071
+1272	0.4076
+1273	0.4051
+1274	0.405
+1275	0.4111
+1276	0.4157
+1277	0.4188
+1278	0.4264
+1279	0.4233
+1280	0.4208
+1281	0.4122
+1282	0.372
+1283	0.4061
+1284	0.4196
+1285	0.4228
+1286	0.4259
+1287	0.4209
+1288	0.4187
+1289	0.4082
+1290	0.4117
+1291	0.4166
+1292	0.395
+1293	0.4114
+1294	0.403
+1295	0.404
+1296	0.3884
+1297	0.3702
+1298	0.3907
+1299	0.4073
+1300	0.3521
+1301	0.3612
+1302	0.3907
+1303	0.3452
+1304	0.2997
+1305	0.3827
+1306	0.3834
+1307	0.3051
+1308	0.346
+1309	0.383
+1310	0.3003
+1311	0.3327
+1312	0.3324
+1313	0.3126
+1314	0.2875
+1315	0.285
+1316	0.3232
+1317	0.3113
+1318	0.3323
+1319	0.2678
+1320	0.258
+1321	0.2978
+1322	0.3013
+1323	0.2321
+1324	0.2617
+1325	0.3213
+1326	0.2797
+1327	0.2655
+1328	0.2338
+1329	0.1771
+1330	0.2286
+1331	0.1444
+1332	0.1454
+1333	0.2025
+1334	0.1688
+1335	0.2305
+1336	0.1829
+1337	0.1641
+1338	0.1775
+1339	0.1763
+1340	0.1678
+1341	0.1699
+1342	0.1775
+1343	0.1267
+1344	0.0754
+1345	0.1087
+1346	0.058
+1347	0.0599
+1348	0.0047
+1349	0.0161
+1350	0.016
+1351	0.0046
+1352	0.0015
+1353	1E-4
+1354	3E-4
+1355	0
+1356	0
+1357	1E-4
+1358	0
+1359	0
+1360	0
+1361	0
+1362	0
+1363	0
+1364	0
+1365	0
+1366	0
+1367	0
+1368	0
+1369	0
 1370	0
-1375	0
-1380	0
+1371	0
+1372	0
+1373	0
+1374	2E-4
+1375	3E-4
+1376	3E-4
+1377	1E-4
+1378	0.0011
+1379	1E-4
+1380	1E-4
+1381	0
+1382	0
+1383	0
+1384	0
 1385	0
-1390	0
+1386	0
+1387	2E-4
+1388	0
+1389	6E-4
+1390	5E-4
+1391	3E-4
+1392	0
+1393	1E-4
+1394	1E-4
 1395	0
+1396	0
+1397	0
+1398	0.0013
+1399	8E-4
 1400	0
-1405	0.0019
-1410	0.0137
-1415	0.0308
-1420	0.0469
-1425	0.0567
-1430	0.0634
-1435	0.0701
-1440	0.0752
-1445	0.0769
-1450	0.0764
-1455	0.0744
-1460	0.0722
-1465	0.0665
-1470	0.0579
-1475	0.0504
-1480	0.044
-1485	0.038
-1490	0.0326
-1495	0.027
-1500	0.0221
-1505	0.0194
-1510	0.0176
-1515	0.0165
-1520	0.0154
-1525	0.0157
-1530	0.0192
-1535	0.025
-1540	0.0284
-1545	0.0287
-1550	0.0284
-1555	0.0295
-1560	0.0311
-1565	0.0336
-1570	0.0373
-1575	0.0413
-1580	0.0449
-1585	0.0476
-1590	0.0494
-1595	0.0498
-1600	0.0495
-1605	0.0478
-1610	0.0456
-1615	0.0432
-1620	0.0406
-1625	0.038
-1630	0.0352
-1635	0.0324
-1640	0.0297
-1645	0.0271
-1650	0.0247
-1655	0.0224
-1660	0.0203
-1665	0.0184
-1670	0.0166
-1675	0.015
-1680	0.0134
-1685	0.012
-1690	0.0107
-1695	0.0094
-1700	0.0082
-1705	0.0071
-1710	0.006
-1715	0.005
-1720	0.0042
-1725	0.0035
-1730	0.0029
-1735	0.0025
-1740	0.0021
-1745	0.0019
-1750	0.0018
-1755	0.0018
-1760	0.002
-1765	0.0023
-1770	0.0028
-1775	0.0034
-1780	0.004
-1785	0.0047
-1790	0.0055
-1795	0.0063
-1800	0.0072
-1805	0.0082
-1810	0.0091
-1815	0.01
-1820	0.0108
-1825	0.0115
-1830	0.0122
-1835	0.0127
-1840	0.013
-1845	0.0132
-1850	0.0132
-1855	0.0131
-1860	0.0129
-1865	0.0126
-1870	0.0122
-1875	0.0118
-1880	0.0113
-1885	0.0108
-1890	0.0103
-1895	0.0098
-1900	0.0093
-1905	0.0088
-1910	0.0083
-1915	0.0079
-1920	0.0075
-1925	0.0071
-1930	0.0067
-1935	0.0064
-1940	0.0061
-1945	0.0058
-1950	0.0056
-1955	0.0054
-1960	0.0052
-1965	0.005
-1970	0.0049
-1975	0.0047
-1980	0.0046
-1985	0.0045
-1990	0.0044
-1995	0.0043
-2000	0.0042`;
+1401	0
+1402	0.0018
+1403	0.0024
+1404	7E-4
+1405	0
+1406	0.002
+1407	2E-4
+1408	0.0016
+1409	6E-4
+1410	5E-4
+1411	0.0021
+1412	0.0026
+1413	0.0233
+1414	4E-4
+1415	2E-4
+1416	0.0355
+1417	0.0117
+1418	0.0135
+1419	0.0021
+1420	0.0082
+1421	0.0091
+1422	0.0462
+1423	0.0092
+1424	0.0169
+1425	0.0258
+1426	0.0277
+1427	0.0494
+1428	0.0045
+1429	0.0379
+1430	0.0614
+1431	0.05
+1432	0.0025
+1433	0.0357
+1434	0.0209
+1435	0.0214
+1436	0.0382
+1437	0.0298
+1438	0.0132
+1439	0.0509
+1440	0.0395
+1441	0.0317
+1442	0.0362
+1443	0.0449
+1444	0.0616
+1445	0.0496
+1446	0.023
+1447	0.0361
+1448	0.1154
+1449	0.1018
+1450	0.0273
+1451	0.0112
+1452	0.0622
+1453	0.0817
+1454	0.1372
+1455	0.066
+1456	0.0883
+1457	0.1167
+1458	0.136
+1459	0.1626
+1460	0.0852
+1461	0.09
+1462	0.1302
+1463	0.0431
+1464	0.1514
+1465	0.0931
+1466	0.065
+1467	0.0359
+1468	0.0767
+1469	0.0946
+1470	0.0495
+1471	0.0178
+1472	0.0466
+1473	0.07
+1474	0.0971
+1475	0.1841
+1476	0.0686
+1477	0.0695
+1478	0.0633
+1479	0.1197
+1480	0.0605
+1481	0.115
+1482	0.0583
+1483	0.1482
+1484	0.1371
+1485	0.1247
+1486	0.123
+1487	0.0605
+1488	0.0939
+1489	0.1892
+1490	0.1743
+1491	0.1972
+1492	0.1639
+1493	0.181
+1494	0.2031
+1495	0.182
+1496	0.168
+1497	0.2278
+1498	0.1891
+1499	0.217
+1500	0.2499
+1501	0.2647
+1502	0.2329
+1503	0.1844
+1504	0.1598
+1505	0.1835
+1506	0.257
+1507	0.2544
+1508	0.2423
+1509	0.1864
+1510	0.2697
+1511	0.264
+1512	0.2599
+1513	0.2417
+1514	0.2251
+1515	0.265
+1516	0.2561
+1517	0.2486
+1518	0.2514
+1519	0.2437
+1520	0.2637
+1521	0.2743
+1522	0.263
+1523	0.2792
+1524	0.2746
+1525	0.2581
+1526	0.2667
+1527	0.2614
+1528	0.2785
+1529	0.2716
+1530	0.2545
+1531	0.2689
+1532	0.2776
+1533	0.2763
+1534	0.2681
+1535	0.2661
+1536	0.2738
+1537	0.2726
+1538	0.2712
+1539	0.2722
+1540	0.2641
+1541	0.2683
+1542	0.2685
+1543	0.2713
+1544	0.2713
+1545	0.2762
+1546	0.274
+1547	0.2723
+1548	0.266
+1549	0.2726
+1550	0.2691
+1551	0.2698
+1552	0.271
+1553	0.2705
+1554	0.264
+1555	0.2668
+1556	0.2623
+1557	0.2698
+1558	0.2677
+1559	0.2673
+1560	0.2649
+1561	0.2692
+1562	0.2668
+1563	0.2659
+1564	0.2619
+1565	0.2665
+1566	0.2617
+1567	0.2623
+1568	0.2565
+1569	0.2538
+1570	0.241
+1571	0.2344
+1572	0.2371
+1573	0.2334
+1574	0.2407
+1575	0.239
+1576	0.2461
+1577	0.2154
+1578	0.2345
+1579	0.236
+1580	0.2439
+1581	0.248
+1582	0.2412
+1583	0.2468
+1584	0.2483
+1585	0.258
+1586	0.2549
+1587	0.2523
+1588	0.2503
+1589	0.2317
+1590	0.2411
+1591	0.2413
+1592	0.2515
+1593	0.2576
+1594	0.2555
+1595	0.2575
+1596	0.2438
+1597	0.2462
+1598	0.2535
+1599	0.2413
+1600	0.2374
+1601	0.2226
+1602	0.2235
+1603	0.2233
+1604	0.2278
+1605	0.2361
+1606	0.2407
+1607	0.2323
+1608	0.2292
+1609	0.2266
+1610	0.217
+1611	0.2261
+1612	0.2301
+1613	0.2365
+1614	0.2377
+1615	0.2403
+1616	0.2298
+1617	0.234
+1618	0.2428
+1619	0.2403
+1620	0.2338
+1621	0.2336
+1622	0.2369
+1623	0.2418
+1624	0.242
+1625	0.2371
+1626	0.239
+1627	0.2401
+1628	0.2406
+1629	0.2407
+1630	0.2358
+1631	0.2374
+1632	0.2375
+1633	0.232
+1634	0.2321
+1635	0.233
+1636	0.2347
+1637	0.2263
+1638	0.2194
+1639	0.2196
+1640	0.2145
+1641	0.219
+1642	0.2202
+1643	0.2147
+1644	0.2229
+1645	0.2176
+1646	0.2169
+1647	0.227
+1648	0.2159
+1649	0.218
+1650	0.2246
+1651	0.2079
+1652	0.2231
+1653	0.2221
+1654	0.2152
+1655	0.2217
+1656	0.2204
+1657	0.2216
+1658	0.2242
+1659	0.2206
+1660	0.2227
+1661	0.2232
+1662	0.2184
+1663	0.2217
+1664	0.2203
+1665	0.2112
+1666	0.1783
+1667	0.2101
+1668	0.214
+1669	0.2145
+1670	0.221
+1671	0.2182
+1672	0.2109
+1673	0.2157
+1674	0.2151
+1675	0.213
+1676	0.2108
+1677	0.2117
+1678	0.2085
+1679	0.2124
+1680	0.205
+1681	0.1939
+1682	0.2031
+1683	0.2085
+1684	0.1974
+1685	0.2126
+1686	0.2097
+1687	0.2042
+1688	0.2095
+1689	0.2066
+1690	0.2046
+1691	0.1925
+1692	0.2065
+1693	0.2107
+1694	0.2042
+1695	0.2091
+1696	0.2086
+1697	0.1805
+1698	0.2068
+1699	0.2049
+1700	0.1992
+1702	0.2034
+1705	0.1972
+1710	0.1874
+1715	0.1891
+1720	0.1864
+1725	0.1776
+1730	0.1736
+1735	0.1611
+1740	0.1677
+1745	0.1544
+1750	0.1652
+1755	0.1526
+1760	0.1595
+1765	0.1325
+1770	0.1413
+1775	0.1145
+1780	0.1002
+1785	0.0768
+1790	0.0886
+1795	0.0468
+1800	0.0317
+1805	0.0148
+1810	0.0097
+1815	0.0033
+1820	1E-3
+1825	0.0013
+1830	0
+1835	0
+1840	0
+1845	0
+1850	0
+1855	0
+1860	0
+1865	0
+1870	0
+1875	0
+1880	1E-4
+1885	0
+1890	2E-4
+1895	1E-4
+1900	0
+1905	0
+1910	0
+1915	0
+1920	4E-4
+1925	9E-4
+1930	6E-4
+1935	0.0036
+1940	0.0033
+1945	0.0108
+1950	0.0167
+1955	0.01
+1960	0.0218
+1965	0.0285
+1970	0.0487
+1975	0.0677
+1980	0.0753
+1985	0.0828
+1990	0.0854
+1995	0.081
+2000	0.038
+2005	0.015
+2010	0.0396
+2015	0.0266
+2020	0.0449
+2025	0.0738
+2030	0.0846
+2035	0.0961
+2040	0.0895
+2045	0.0908
+2050	0.0677
+2055	0.0547
+2060	0.069
+2065	0.0617
+2070	0.0655
+2075	0.0772
+2080	0.0866
+2085	0.0849
+2090	0.0888
+2095	0.0895
+2100	0.0859
+2105	0.0929
+2110	0.0894
+2115	0.0914
+2120	0.0873
+2125	0.0884
+2130	0.0895
+2135	0.0898
+2140	0.0905
+2145	0.0892
+2150	0.0844
+2155	0.0846
+2160	0.0839
+2165	0.0761
+2170	0.0818
+2175	0.0802
+2180	0.0816
+2185	0.0743
+2190	0.0788
+2195	0.0788
+2200	0.071
+2205	0.0738
+2210	0.0791
+2215	0.0761
+2220	0.0775
+2225	0.0752
+2230	0.0756
+2235	0.0741
+2240	0.0729
+2245	0.0706
+2250	0.0717
+2255	0.0675
+2260	0.0667
+2265	0.0679
+2270	0.0647
+2275	0.0638
+2280	0.0661
+2285	0.0629
+2290	0.063
+2295	0.0611
+2300	0.0587
+2305	0.059
+2310	0.0637
+2315	0.058
+2320	0.0519
+2325	0.0561
+2330	0.0567
+2335	0.0578
+2340	0.0457
+2345	0.0513
+2350	0.0414
+2355	0.0473
+2360	0.0501
+2365	0.0493
+2370	0.0307
+2375	0.044
+2380	0.0424
+2385	0.0307
+2390	0.037
+2395	0.0405
+2400	0.044
+2405	0.0335
+2410	0.0337
+2415	0.0272
+2420	0.0265
+2425	0.033
+2430	0.045
+2435	0.0148
+2440	0.0431
+2445	0.0207
+2450	0.0136
+2455	0.0248
+2460	0.0333
+2465	0.0241
+2470	0.0167
+2475	0.0164
+2480	0.008
+2485	0.0056
+2490	0.0035
+2495	0.0029
+2500	0.007
+2505	0.0015
+2510	0.0022
+2515	5E-4
+2520	4E-4
+2525	0
+2530	0
+2535	0
+2540	0
+2545	0
+2550	0
+2555	0
+2560	0
+2565	0
+2570	0
+2575	0
+2580	0
+2585	0
+2590	0
+2595	0
+2600	0
+2605	0
+2610	0
+2615	0
+2620	0
+2625	0
+2630	0
+2635	0
+2640	0
+2645	0
+2650	0
+2655	0
+2660	0
+2665	0
+2670	0
+2675	0
+2680	0
+2685	0
+2690	0
+2695	0
+2700	0
+2705	0
+2710	0
+2715	0
+2720	0
+2725	0
+2730	0
+2735	0
+2740	0
+2745	0
+2750	0
+2755	0
+2760	0
+2765	0
+2770	0
+2775	0
+2780	0
+2785	0
+2790	0
+2795	0
+2800	0
+2805	0
+2810	0
+2815	0
+2820	0
+2825	0
+2830	0
+2835	0
+2840	0
+2845	0
+2850	0
+2855	0
+2860	0
+2865	2E-4
+2870	0
+2875	4E-4
+2880	2E-4
+2885	5E-4
+2890	2E-4
+2895	0.0027
+2900	8E-4
+2905	1E-4
+2910	0.0027
+2915	0.0013
+2920	0.0029
+2925	0.0011
+2930	0.0059
+2935	0.0065
+2940	0.0016
+2945	0.0014
+2950	0.0052
+2955	0.0023
+2960	0.0046
+2965	0.0074
+2970	4E-4
+2975	9E-4
+2980	0.0013
+2985	0.0069
+2990	0.0103
+2995	0.0043
+3000	0.0078
+3005	0.0029
+3010	0.0068
+3015	0.0055
+3020	6E-4
+3025	0.0075
+3030	0.0061
+3035	0.0025
+3040	0.002
+3045	0.0042
+3050	1E-3
+3055	3E-4
+3060	0.0063
+3065	0.0029
+3070	0.0017
+3075	0.006
+3080	0.0036
+3085	0.0018
+3090	0.0024
+3095	7E-4
+3100	0.0044
+3105	9E-4
+3110	8E-4
+3115	0.0023
+3120	0.0098
+3125	0.003
+3130	0.0057
+3135	0.0114
+3140	0.0033
+3145	0.0032
+3150	0.0067
+3155	0.0056
+3160	0.0092
+3165	0.014
+3170	0.0125
+3175	0.0092
+3180	0.0106
+3185	0.0081
+3190	0.0042
+3195	0.0027
+3200	4E-4
+3205	3E-4
+3210	1E-4
+3215	5E-4
+3220	0.0016
+3225	2E-4
+3230	3E-4
+3235	0.0073
+3240	0.0037
+3245	7E-4
+3250	0.0026
+3255	0.0099
+3260	0.0012
+3265	0.0024
+3270	0.0012
+3275	0.0059
+3280	0.0029
+3285	0.0111
+3290	0.0087
+3295	0.0012
+3300	0.0018
+3305	0.0039
+3310	0.0039
+3315	0
+3320	1E-4
+3325	0.0035
+3330	0.0046
+3335	0.009
+3340	0.0035
+3345	0.0035
+3350	0.008
+3355	0.0036
+3360	0.0052
+3365	0.0072
+3370	0.0039
+3375	0.0084
+3380	0.0051
+3385	0.0075
+3390	0.0098
+3395	0.0095
+3400	0.0125
+3405	0.0044
+3410	0.0071
+3415	0.0073
+3420	0.0131
+3425	0.01
+3430	0.0087
+3435	0.0115
+3440	0.008
+3445	0.0113
+3450	0.0111
+3455	0.0083
+3460	0.0125
+3465	0.0098
+3470	0.0122
+3475	0.0109
+3480	0.0112
+3485	0.0121
+3490	0.0104
+3495	0.0122
+3500	0.0119
+3505	0.0118
+3510	0.0119
+3515	0.0115
+3520	0.0121
+3525	0.0114
+3530	0.0111
+3535	0.0094
+3540	0.009
+3545	0.0095
+3550	0.0105
+3555	0.009
+3560	0.0108
+3565	0.0108
+3570	0.0083
+3575	0.0086
+3580	0.0102
+3585	0.0091
+3590	0.0094
+3595	0.0096
+3600	0.0102
+3605	0.0103
+3610	0.0095
+3615	0.0094
+3620	0.0116
+3625	0.0102
+3630	0.0099
+3635	0.0103
+3640	0.0114
+3645	0.0106
+3650	0.0101
+3655	0.0109
+3660	0.0109
+3665	0.0102
+3670	0.0079
+3675	0.0048
+3680	0.0083
+3685	0.0094
+3690	0.0097
+3695	0.0101
+3700	0.0108
+3705	0.0107
+3710	0.0093
+3715	0.0092
+3720	0.0103
+3725	0.0107
+3730	0.0092
+3735	0.0086
+3740	0.0088
+3745	0.0103
+3750	0.0093
+3755	0.009
+3760	0.0088
+3765	0.0085
+3770	0.0091
+3775	0.009
+3780	0.0095
+3785	0.0088
+3790	0.0077
+3795	0.0088
+3800	0.0098
+3805	0.0093
+3810	0.0082
+3815	0.0077
+3820	0.0096
+3825	0.0095
+3830	0.0096
+3835	0.0077
+3840	0.0089
+3845	0.0088
+3850	0.0088
+3860	0.008
+3865	0.0081
+3870	0.0073
+3875	0.0067
+3880	0.0065
+3885	0.0068
+3890	0.0069
+3895	0.0075
+3900	0.0079
+3905	0.0079
+3910	0.0071
+3915	0.007
+3920	0.0069
+3925	0.0068
+3930	0.007
+3935	0.0073
+3940	0.0074
+3945	0.0075
+3950	0.0076
+3955	0.0077
+3960	0.0077
+3965	0.0078
+3970	0.0077
+3975	0.0075
+3980	0.0074
+3985	0.0074
+3990	0.0074
+3995	0.0072
+4000	0.0071
+`;
 
-// ==========================================
-// ÉTAT DE L'APPLICATION
-// ==========================================
-let state = {
-  refData: null,   // {wl: Float64Array, curr: Float64Array}
-  cellData: null,  // {wl: Float64Array, curr: Float64Array}
-  cellName: 'Result',
-  srRef: null,     // {wl, val}
-  am15g: null,     // {wl, val}
-};
+    // ==========================================
+    // 2. État de l'application
+    // ==========================================
+    let state = {
+        refData: null,
+        cellData: null,
+        cellName: "Result",
+        lastCalc: null
+    };
 
-// ==========================================
-// UTILITAIRES MATHÉMATIQUES
-// ==========================================
-function linInterp(xArr, yArr, x) {
-  const n = xArr.length;
-  if (x <= xArr[0]) return yArr[0];
-  if (x >= xArr[n-1]) return yArr[n-1];
-  let lo = 0, hi = n - 1;
-  while (hi - lo > 1) {
-    const mid = (lo + hi) >> 1;
-    if (xArr[mid] <= x) lo = mid; else hi = mid;
-  }
-  const t = (x - xArr[lo]) / (xArr[hi] - xArr[lo]);
-  return yArr[lo] + t * (yArr[hi] - yArr[lo]);
-}
+    // Configuration statique du graphique
+    const plotConfig = {
+        staticPlot: true, // Désactive toute interaction (zoom, hover)
+        responsive: false
+    };
 
-function interpArray(srcX, srcY, tgtX) {
-  return tgtX.map(x => linInterp(srcX, srcY, x));
-}
+    // Style OriginPro
+    const layoutOrigin = {
+        width: 700,
+        height: 500, // Ratio 1:1.4
+        plot_bgcolor: 'white',
+        paper_bgcolor: 'white',
+        margin: { l: 70, r: 70, t: 30, b: 60 },
+        showlegend: false, // Pas de légende
+        
+        xaxis: {
+            title: '<b>Wavelength(nm)</b>',
+            titlefont: { size: 18, color: 'black', family: 'Arial' },
+            tickfont: { size: 16, color: 'black', family: 'Arial' },
+            range: [300, 1000],
+            dtick: 100,
+            showline: true,
+            linewidth: 2,
+            linecolor: 'black',
+            mirror: true, // Dessine la ligne du haut mais SANS les ticks
+            ticks: 'inside',
+            ticklen: 6,
+            tickwidth: 2,
+            showgrid: false,
+            zeroline: false,
+            minor: { // Ajout des minor ticks (1 tous les 50nm)
+                dtick: 50,
+                ticks: 'inside',
+                ticklen: 3,
+                tickwidth: 1.5,
+                tickcolor: 'black'
+            }
+        },
+        yaxis: {
+            title: '<b>EQE (%)</b>',
+            titlefont: { size: 18, color: 'black', family: 'Arial' },
+            tickfont: { size: 16, color: 'black', family: 'Arial' },
+            range: [0, 100],
+            dtick: 10,
+            showline: true,
+            linewidth: 2,
+            linecolor: 'black',
+            mirror: false, // On ne dessine pas la ligne de droite ici
+            ticks: 'inside',
+            ticklen: 6,
+            tickwidth: 2,
+            showgrid: false,
+            zeroline: false,
+            minor: { // Ajout des minor ticks (1 tous les 5%)
+                dtick: 5,
+                ticks: 'inside',
+                ticklen: 3,
+                tickwidth: 1.5,
+                tickcolor: 'black'
+            }
+        },
+        yaxis2: {
+            title: '<b>Integrated Jsc(mA/cm2)</b>',
+            titlefont: { size: 18, color: 'black', family: 'Arial' },
+            tickfont: { size: 16, color: 'black', family: 'Arial' },
+            range: [0, 30],
+            dtick: 2,
+            overlaying: 'y',
+            side: 'right',
+            showline: true, // Crée la ligne de droite
+            linewidth: 2,
+            linecolor: 'black',
+            ticks: 'inside',
+            ticklen: 6,
+            tickwidth: 2,
+            showgrid: false,
+            zeroline: false,
+            minor: { // Ajout des minor ticks (1 tous les 1mA/cm2)
+                dtick: 1,
+                ticks: 'inside',
+                ticklen: 3,
+                tickwidth: 1.5,
+                tickcolor: 'black'
+            }
+        }
+    };
 
-function medianStep(arr) {
-  const diffs = [];
-  for (let i = 1; i < arr.length; i++) diffs.push(Math.round((arr[i] - arr[i-1]) * 100) / 100);
-  diffs.sort((a, b) => a - b);
-  return diffs[Math.floor(diffs.length / 2)];
-}
+    // Initialisation du graphique avec deux courbes "vides" pour forcer l'affichage des deux axes Y
+    const initialTraces = [
+        { x: [], y: [], type: 'scatter', mode: 'lines' }, // Trace invisible attachée à yaxis (gauche)
+        { x: [], y: [], type: 'scatter', mode: 'lines', yaxis: 'y2' } // Trace invisible attachée à yaxis2 (droite)
+    ];
+    Plotly.newPlot('plot-div', initialTraces, layoutOrigin, plotConfig);
 
-// ==========================================
-// PARSING DONNÉES
-// ==========================================
-function parseTSV(str) {
-  const wl = [], val = [];
-  const lines = str.trim().split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || isNaN(parseFloat(trimmed[0]))) continue;
-    const cols = trimmed.split(/[\t;,\s]+/);
-    if (cols.length >= 2) {
-      const w = parseFloat(cols[0]);
-      const v = parseFloat(cols[1]);
-      if (!isNaN(w) && !isNaN(v)) { wl.push(w); val.push(v); }
+    // ==========================================
+    // 3. Fonctions Utilitaires (Équivalents Numpy)
+    // ==========================================
+    function parseConstantsString(str) {
+        const lines = str.trim().split('\n').slice(1);
+        let wls = [], vals = [];
+        for (let line of lines) {
+            let cols = line.split(/[\t; ]+/);
+            if (cols.length >= 2) {
+                let w = parseFloat(cols[0].replace(',', '.'));
+                let v = parseFloat(cols[1].replace(',', '.'));
+                if (!isNaN(w) && !isNaN(v)) { wls.push(w); vals.push(v); }
+            }
+        }
+        return { wl: wls, val: vals };
     }
-  }
-  return { wl: Float64Array.from(wl), val: Float64Array.from(val) };
-}
 
-function parseCurrentFile(text, condition) {
-  const data = [];
-  let reading = false;
-  for (const line of text.split('\n')) {
-    const l = line.trim();
-    if (l.startsWith('---')) break;
-    if (l.startsWith('consigne WaveLenth')) { reading = true; continue; }
-    if (reading && l) {
-      const cols = l.split(';');
-      if (cols.length >= 3) {
+    function npInterp(xArray, xpArray, ypArray) {
+        let result = [];
+        for (let i = 0; i < xArray.length; i++) {
+            let x = xArray[i];
+            if (x <= xpArray[0]) { result.push(ypArray[0]); continue; }
+            if (x >= xpArray[xpArray.length - 1]) { result.push(ypArray[ypArray.length - 1]); continue; }
+            
+            let j = 0;
+            while (j < xpArray.length - 1 && xpArray[j + 1] <= x) { j++; }
+            if (xpArray[j] === x) { result.push(ypArray[j]); }
+            else {
+                let slope = (ypArray[j + 1] - ypArray[j]) / (xpArray[j + 1] - xpArray[j]);
+                result.push(ypArray[j] + slope * (x - xpArray[j]));
+            }
+        }
+        return result;
+    }
+
+    function npMedian(arr) {
+        if (arr.length === 0) return 0;
+        let sorted = [...arr].sort((a, b) => a - b);
+        let half = Math.floor(sorted.length / 2);
+        return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2.0;
+    }
+
+    function npDiff(arr) {
+        let diffs = [];
+        for (let i = 0; i < arr.length - 1; i++) {
+            diffs.push(arr[i + 1] - arr[i]);
+        }
+        return diffs;
+    }
+
+    function floatRange(start, stop, step) {
+        let arr = [];
+        for (let i = start; i <= stop + (step/10); i += step) { arr.push(i); }
+        return arr;
+    }
+
+    // ==========================================
+    // 4. Logique de Traitement des Fichiers
+    // ==========================================
+    function parseCustomFile(text, condition) {
+        let lines = text.split('\n');
+        let data = [];
+        let reading = false;
+
+        for (let line of lines) {
+            line = line.trim();
+            if (line.startsWith('---')) break;
+            if (line.startsWith('consigne WaveLenth')) { reading = true; continue; }
+            if (reading && line) {
+                let cols = line.split(';');
+                if (cols.length >= 3) {
+                    let wl = parseFloat(cols[0].replace(',', '.'));
+                    let curr = Math.abs(parseFloat(cols[2].replace(',', '.')));
+                    if (!isNaN(wl) && !isNaN(curr) && condition(wl)) {
+                        data.push({wl, curr});
+                    }
+                }
+            }
+        }
+        return data;
+    }
+
+    async function handleFileSelect(event, type) {
+        const files = event.target.files;
+        if (files.length !== 2) {
+            alert("Veuillez sélectionner exactement 2 fichiers (ex: 200-580 et 560-1100).");
+            return;
+        }
+
         try {
-          const wl = parseFloat(cols[0].replace(',', '.'));
-          const curr = Math.abs(parseFloat(cols[2].replace(',', '.')));
-          if (!isNaN(wl) && !isNaN(curr) && condition(wl)) data.push([wl, curr]);
-        } catch(e) {}
-      }
-    }
-  }
-  return data;
-}
+            let texts = await Promise.all([files[0].text(), files[1].text()]);
+            let name0 = files[0].name;
+            
+            let txtLow, txtHigh;
+            if (name0.includes("200-580")) { txtLow = texts[0]; txtHigh = texts[1]; } 
+            else { txtLow = texts[1]; txtHigh = texts[0]; }
 
-async function readAndMerge(files) {
-  const texts = await Promise.all(Array.from(files).map(f => f.text()));
-  // Determine which file is low (200-580) and which is high (560-1100)
-  const names = Array.from(files).map(f => f.name);
-  let f1idx = names.findIndex(n => n.includes('200-580'));
-  let f2idx = names.findIndex(n => n.includes('560-1100'));
-  if (f1idx === -1) f1idx = 0;
-  if (f2idx === -1) f2idx = f1idx === 0 ? 1 : 0;
+            let lowData = parseCustomFile(txtLow, wl => wl < 580.0);
+            let highData = parseCustomFile(txtHigh, wl => wl >= 580.0);
+            
+            let merged = lowData.concat(highData);
+            let wls = merged.map(d => d.wl);
+            let currs = merged.map(d => d.curr);
 
-  const lowData = parseCurrentFile(texts[f1idx], wl => wl < 580.0);
-  const highData = parseCurrentFile(texts[f2idx], wl => wl >= 580.0);
-  const merged = [...lowData, ...highData];
+            if (type === 'ref') {
+                state.refData = { wl: wls, curr: currs };
+                document.getElementById('status-ref').innerText = "Reference Merged Successfully ✅";
+                document.getElementById('status-ref').style.color = "var(--success)";
+                document.getElementById('btn-exp-mref').disabled = false;
+            } else {
+                state.cellData = { wl: wls, curr: currs };
+                state.cellName = files[0].name.replace("200-580", "").replace("560-1100", "").replace(/_-\s*$/, "").replace(".csv", "").replace(".txt", "");
+                document.getElementById('status-cell').innerText = `Cell: ${state.cellName} Merged ✅`;
+                document.getElementById('status-cell').style.color = "var(--success)";
+                document.getElementById('btn-exp-mcell').disabled = false;
+            }
 
-  if (merged.length === 0) throw new Error('Aucune donnée trouvée dans les fichiers. Vérifiez le format (séparateur ";", ligne "consigne WaveLenth").');
+            checkAndDisplayStep();
+            updateJsc();
 
-  merged.sort((a, b) => a[0] - b[0]);
-  return {
-    wl: Float64Array.from(merged.map(r => r[0])),
-    curr: Float64Array.from(merged.map(r => r[1]))
-  };
-}
-
-// ==========================================
-// CHARGEMENT DONNÉES DE RÉFÉRENCE CONSTANTES
-// ==========================================
-function loadConstants() {
-  if (!state.srRef) {
-    const parsed = parseTSV(SR_REF_DATA);
-    state.srRef = { wl: Array.from(parsed.wl), val: Array.from(parsed.val) };
-  }
-  if (!state.am15g) {
-    const parsed = parseTSV(AM15G_DATA_STR);
-    state.am15g = { wl: Array.from(parsed.wl), val: Array.from(parsed.val) };
-  }
-}
-
-// ==========================================
-// CALCUL PRINCIPAL
-// ==========================================
-function calculateArrays() {
-  const minW = parseFloat(document.getElementById('wlMin').value);
-  const maxW = parseFloat(document.getElementById('wlMax').value);
-  const stepUser = parseFloat(document.getElementById('stepUser').value);
-
-  loadConstants();
-  const { refData, cellData, srRef, am15g } = state;
-
-  const wlRaw = Array.from(cellData.wl);
-  const iCRaw = Array.from(cellData.curr);
-  const stepCellRaw = medianStep(wlRaw);
-  const isInterpolated = Math.abs(stepUser - stepCellRaw) > 0.01;
-
-  // --- CALCULS SUR GRILLE BRUTE ---
-  const iRRaw = interpArray(Array.from(refData.wl), Array.from(refData.curr), wlRaw);
-  const srRRaw = interpArray(srRef.wl, srRef.val, wlRaw);
-  const amRaw = interpArray(am15g.wl, am15g.val, wlRaw);
-
-  const pIncRaw = iRRaw.map((v, i) => v / srRRaw[i]);
-  const srCRaw = iCRaw.map((v, i) => v / pIncRaw[i]);
-  const eqeRaw = srCRaw.map((v, i) => (v * HC_J_NM / E_CHARGE) / wlRaw[i] * 100);
-  const jDensRaw = srCRaw.map((v, i) => v * amRaw[i] * 0.1);
-
-  const jMaskedRaw = jDensRaw.map((v, i) => (wlRaw[i] >= minW && wlRaw[i] <= maxW) ? v : 0);
-  const intJRaw = [0];
-  for (let i = 1; i < wlRaw.length; i++) {
-    intJRaw.push(intJRaw[i-1] + 0.5 * (jMaskedRaw[i] + jMaskedRaw[i-1]) * (wlRaw[i] - wlRaw[i-1]));
-  }
-
-  if (!isInterpolated) {
-    const totalJsc = intJRaw[intJRaw.length - 1];
-    return { isInterpolated, stepCellRaw, wlRaw, eqeRaw, srCRaw, jDensRaw, intJRaw, totalJsc };
-  }
-
-  // --- CALCULS SUR GRILLE INTERPOLÉE ---
-  const wlInterp = [];
-  for (let w = Math.min(...wlRaw); w <= Math.max(...wlRaw) + stepUser/10; w += stepUser)
-    wlInterp.push(Math.round(w * 10000) / 10000);
-
-  const iCInterp = interpArray(wlRaw, iCRaw, wlInterp);
-  const iRInterp = interpArray(Array.from(refData.wl), Array.from(refData.curr), wlInterp);
-  const srRInterp = interpArray(srRef.wl, srRef.val, wlInterp);
-  const amInterp = interpArray(am15g.wl, am15g.val, wlInterp);
-
-  const pIncInterp = iRInterp.map((v, i) => v / srRInterp[i]);
-  const srCInterp = iCInterp.map((v, i) => v / pIncInterp[i]);
-  const eqeInterp = srCInterp.map((v, i) => (v * HC_J_NM / E_CHARGE) / wlInterp[i] * 100);
-  const jDensInterp = srCInterp.map((v, i) => v * amInterp[i] * 0.1);
-
-  const jMaskedInterp = jDensInterp.map((v, i) => (wlInterp[i] >= minW && wlInterp[i] <= maxW) ? v : 0);
-  const intJInterp = [0];
-  for (let i = 1; i < wlInterp.length; i++) {
-    intJInterp.push(intJInterp[i-1] + 0.5 * (jMaskedInterp[i] + jMaskedInterp[i-1]) * (wlInterp[i] - wlInterp[i-1]));
-  }
-
-  const totalJsc = intJInterp[intJInterp.length - 1];
-  return { isInterpolated, stepCellRaw, wlRaw, eqeRaw, srCRaw, jDensRaw, intJRaw, wlInterp, eqeInterp, srCInterp, jDensInterp, intJInterp, totalJsc };
-}
-
-// ==========================================
-// MISE À JOUR JSC
-// ==========================================
-function updateJsc() {
-  if (!state.refData || !state.cellData) return;
-  try {
-    const res = calculateArrays();
-    const el = document.getElementById('jscValue');
-    el.textContent = res.totalJsc.toFixed(3);
-    el.classList.add('active');
-    checkStep();
-  } catch(e) {
-    showToast('Erreur de calcul : ' + e.message, 'error');
-  }
-}
-
-// ==========================================
-// VÉRIFICATION DU STEP
-// ==========================================
-function checkStep() {
-  const dot = document.getElementById('stepDot');
-  const txt = document.getElementById('stepText');
-
-  let stepRef = null, stepCell = null;
-  if (state.refData) stepRef = medianStep(Array.from(state.refData.wl));
-  if (state.cellData) stepCell = medianStep(Array.from(state.cellData.wl));
-
-  if (stepRef !== null && stepCell !== null) {
-    if (Math.abs(stepRef - stepCell) > 0.01) {
-      dot.className = 'step-dot err';
-      txt.textContent = `⚠ INCOHÉRENCE — Ref: ${stepRef} nm / Cellule: ${stepCell} nm`;
-      txt.style.color = 'var(--error)';
-      showToast(`Incohérence de pas détectée ! Ref: ${stepRef} nm, Cellule: ${stepCell} nm`, 'warning');
-    } else {
-      dot.className = 'step-dot ok';
-      txt.textContent = `Step détecté : ${stepRef} nm ✓`;
-      txt.style.color = 'var(--success)';
-    }
-  } else if (stepRef !== null) {
-    dot.className = 'step-dot info';
-    txt.textContent = `Step Référence détecté : ${stepRef} nm`;
-    txt.style.color = 'var(--accent2)';
-  } else if (stepCell !== null) {
-    dot.className = 'step-dot info';
-    txt.textContent = `Step Cellule détecté : ${stepCell} nm`;
-    txt.style.color = 'var(--accent2)';
-  }
-}
-
-// ==========================================
-// HANDLERS D'IMPORT
-// ==========================================
-document.getElementById('refFiles').addEventListener('change', async (e) => {
-  const files = e.target.files;
-  const status = document.getElementById('refStatus');
-  if (files.length !== 2) {
-    status.textContent = `⚠ Sélectionnez exactement 2 fichiers (vous en avez sélectionné ${files.length})`;
-    status.className = 'file-status err';
-    return;
-  }
-  try {
-    showLoading(true);
-    state.refData = await readAndMerge(files);
-    status.textContent = `✓ Référence chargée — ${state.refData.wl.length} points (${state.refData.wl[0].toFixed(1)} – ${state.refData.wl[state.refData.wl.length-1].toFixed(1)} nm)`;
-    status.className = 'file-status ok';
-    document.getElementById('btnExportRef').disabled = false;
-    checkStep();
-    updateJsc();
-    updateExportButtons();
-  } catch(err) {
-    status.textContent = '✗ Erreur : ' + err.message;
-    status.className = 'file-status err';
-    showToast(err.message, 'error');
-  } finally { showLoading(false); }
-});
-
-document.getElementById('cellFiles').addEventListener('change', async (e) => {
-  const files = e.target.files;
-  const status = document.getElementById('cellStatus');
-  if (files.length !== 2) {
-    status.textContent = `⚠ Sélectionnez exactement 2 fichiers (vous en avez sélectionné ${files.length})`;
-    status.className = 'file-status err';
-    return;
-  }
-  try {
-    showLoading(true);
-    const names = Array.from(files).map(f => f.name);
-    const baseName = names[0].replace(/200-580|560-1100/g, '').replace(/[_\-\s]+$/, '').replace(/\.[^.]+$/, '');
-    state.cellName = baseName || 'Result';
-    state.cellData = await readAndMerge(files);
-    status.textContent = `✓ ${state.cellName} — ${state.cellData.wl.length} points (${state.cellData.wl[0].toFixed(1)} – ${state.cellData.wl[state.cellData.wl.length-1].toFixed(1)} nm)`;
-    status.className = 'file-status ok';
-    document.getElementById('btnExportCell').disabled = false;
-    checkStep();
-    updateJsc();
-    updateExportButtons();
-  } catch(err) {
-    status.textContent = '✗ Erreur : ' + err.message;
-    status.className = 'file-status err';
-    showToast(err.message, 'error');
-  } finally { showLoading(false); }
-});
-
-function updateExportButtons() {
-  const both = state.refData && state.cellData;
-  document.getElementById('btnExportData').disabled = !both;
-  document.getElementById('btnExportSheet').disabled = !both;
-}
-
-// ==========================================
-// FONCTIONS D'EXPORT
-// ==========================================
-function downloadText(content, filename) {
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-  showToast(`Fichier téléchargé : ${filename}`, 'success');
-}
-
-function exportMergedRef() {
-  if (!state.refData) return;
-  let out = 'Wavelength(nm)\tRef_Current(A)\n';
-  for (let i = 0; i < state.refData.wl.length; i++)
-    out += `${state.refData.wl[i].toFixed(3)}\t${state.refData.curr[i].toExponential(4)}\n`;
-  downloadText(out, 'Merged_Ref_Current.csv');
-}
-
-function exportMergedCell() {
-  if (!state.cellData) return;
-  let out = 'Wavelength(nm)\tCell_Current(A)\n';
-  for (let i = 0; i < state.cellData.wl.length; i++)
-    out += `${state.cellData.wl[i].toFixed(3)}\t${state.cellData.curr[i].toExponential(4)}\n`;
-  downloadText(out, `${state.cellName}_Merged_Cell_Current.csv`);
-}
-
-function exportRefResponsivity() {
-  downloadText(SR_REF_DATA, 'Ref_Responsivity.txt');
-}
-
-function exportAM15G() {
-  downloadText('Wavelength(nm)\tIrradiance(W/m2/nm)\n' + AM15G_DATA_STR, 'Irradiance_AM1.5G.txt');
-}
-
-function exportCSV() {
-  if (!state.refData || !state.cellData) return;
-  try {
-    showLoading(true);
-    const res = calculateArrays();
-    let out = '';
-
-    if (!res.isInterpolated) {
-      out = 'Wavelength(nm)\tEQE(%)\tCell_Responsivity(A/W)\tJsc(mA/cm2/nm)\tInt_Jsc(mA/cm2)\n';
-      for (let i = 0; i < res.wlRaw.length; i++) {
-        out += `${res.wlRaw[i].toFixed(3)}\t${res.eqeRaw[i].toFixed(4)}\t${res.srCRaw[i].toFixed(4)}\t${res.jDensRaw[i].toFixed(6)}\t${res.intJRaw[i].toFixed(5)}\n`;
-      }
-    } else {
-      out = 'Wavelength_Raw(nm)\tEQE_Raw(%)\tCell_Resp_Raw(A/W)\t\tWavelength_Interp(nm)\tEQE_Interp(%)\tCell_Resp_Interp(A/W)\tJsc_Interp(mA/cm2/nm)\tInt_Jsc_Interp(mA/cm2)\n';
-      const nMax = Math.max(res.wlRaw.length, res.wlInterp.length);
-      for (let i = 0; i < nMax; i++) {
-        const rawPart = i < res.wlRaw.length
-          ? `${res.wlRaw[i].toFixed(3)}\t${res.eqeRaw[i].toFixed(4)}\t${res.srCRaw[i].toFixed(4)}`
-          : '\t\t';
-        const interpPart = i < res.wlInterp.length
-          ? `${res.wlInterp[i].toFixed(3)}\t${res.eqeInterp[i].toFixed(4)}\t${res.srCInterp[i].toFixed(4)}\t${res.jDensInterp[i].toFixed(6)}\t${res.intJInterp[i].toFixed(5)}`
-          : '\t\t\t\t';
-        out += `${rawPart}\t\t${interpPart}\n`;
-      }
-    }
-    downloadText(out, `EQE_${state.cellName}.csv`);
-  } catch(e) {
-    showToast('Erreur export : ' + e.message, 'error');
-  } finally { showLoading(false); }
-}
-
-function exportCalculationSheet() {
-  if (!state.refData || !state.cellData) return;
-  try {
-    showLoading(true);
-    loadConstants();
-    const minW = parseFloat(document.getElementById('wlMin').value);
-    const maxW = parseFloat(document.getElementById('wlMax').value);
-    const { refData, cellData, srRef, am15g } = state;
-
-    const wlRaw = Array.from(cellData.wl);
-    const iCellRaw = Array.from(cellData.curr);
-    const stepCell = medianStep(wlRaw);
-
-    const iRefAligned = interpArray(Array.from(refData.wl), Array.from(refData.curr), wlRaw);
-    const srRefAligned = interpArray(srRef.wl, srRef.val, wlRaw);
-    const amAligned = interpArray(am15g.wl, am15g.val, wlRaw);
-
-    const energyPerPhoton = wlRaw.map(w => HC_J_NM / w);
-    const pInc = iRefAligned.map((v, i) => v / srRefAligned[i]);
-    const photonsPerS = pInc.map((v, i) => v / energyPerPhoton[i]);
-    const electronsPerS = iCellRaw.map(v => v / E_CHARGE);
-    const srCell = iCellRaw.map((v, i) => v / pInc[i]);
-    const eqeCalc = electronsPerS.map((v, i) => (v / photonsPerS[i]) * 100);
-    const jDens = srCell.map((v, i) => v * amAligned[i] * 0.1);
-    const jMasked = jDens.map((v, i) => (wlRaw[i] >= minW && wlRaw[i] <= maxW) ? v : 0);
-    const intJ = [0];
-    for (let i = 1; i < wlRaw.length; i++)
-      intJ.push(intJ[i-1] + 0.5 * (jMasked[i] + jMasked[i-1]) * (wlRaw[i] - wlRaw[i-1]));
-
-    let out = `Constants\th (m2.kg.s-1)\t${H_PLANCK.toExponential(8)}\n`;
-    out += `\tc(m.s-1)\t${C_LIGHT.toFixed(2)}\n`;
-    out += `\thc(J.nm)\t${HC_J_NM.toExponential(8)}\n`;
-    out += `\te(C)\t${E_CHARGE.toExponential(9)}\n`;
-    out += `\tIntegration step(nm)\t${stepCell}\n\n`;
-    out += `\thc/λ\t\t\t\tRef_Current/Ref_Responsivity\tIncident Power/Energy per Photon\t\t\t\t\t\tCell_Current/Incident Power\tAM1.5G×Cell_Responsivity×0.1\tIntegration\n`;
-    out += `Wavelength(nm)\tEnergy per Photon (J/Photon)\tAM1.5G(W/m2/nm)\tRef_Current(A)\tRef_Responsivity(A/W)\tIncident Power (W)\tPhoton/s\t\tCell_Current(A)\tElectron/s\t\tEQE(%)\tCell_Responsivity(A/W)\tJsc_density(mA/cm2/nm)\tInt_Jsc(mA/cm2)\n`;
-
-    for (let i = 0; i < wlRaw.length; i++) {
-      out += [
-        wlRaw[i].toFixed(3),
-        energyPerPhoton[i].toExponential(6),
-        amAligned[i].toFixed(4),
-        iRefAligned[i].toExponential(4),
-        srRefAligned[i].toFixed(4),
-        pInc[i].toExponential(4),
-        photonsPerS[i].toExponential(4),
-        '',
-        iCellRaw[i].toExponential(4),
-        electronsPerS[i].toExponential(4),
-        '',
-        eqeCalc[i].toFixed(4),
-        srCell[i].toFixed(4),
-        jDens[i].toFixed(6),
-        intJ[i].toFixed(5)
-      ].join('\t') + '\n';
+        } catch (error) {
+            alert("Erreur de lecture : " + error);
+        }
     }
 
-    downloadText(out, `${state.cellName}_Calculation_Sheet.csv`);
-  } catch(e) {
-    showToast('Erreur export : ' + e.message, 'error');
-  } finally { showLoading(false); }
-}
+    document.getElementById('file-ref').addEventListener('change', (e) => handleFileSelect(e, 'ref'));
+    document.getElementById('file-cell').addEventListener('change', (e) => handleFileSelect(e, 'cell'));
 
-// ==========================================
-// UI HELPERS
-// ==========================================
-function showLoading(show) {
-  document.getElementById('loadingOverlay').classList.toggle('show', show);
-}
+    function checkAndDisplayStep() {
+        let stepRef = null, stepCell = null;
+        let lbl = document.getElementById('step-detected');
 
-function showToast(msg, type = 'success') {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = { success: '✓', error: '✗', warning: '⚠' };
-  toast.innerHTML = `<span>${icons[type] || '●'}</span><span>${msg}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
-}
+        if (state.refData) stepRef = Math.round(npMedian(npDiff(state.refData.wl)) * 100) / 100;
+        if (state.cellData) stepCell = Math.round(npMedian(npDiff(state.cellData.wl)) * 100) / 100;
 
-// Init
-loadConstants();
+        if (stepRef !== null && stepCell !== null) {
+            if (stepRef !== stepCell) {
+                alert(`INCOHÉRENCE DÉTECTÉE !\nRef: ${stepRef} nm\nCell: ${stepCell} nm`);
+                lbl.innerText = "Step detected: ERROR (Mismatch)";
+                lbl.style.color = "red";
+            } else {
+                lbl.innerText = `Step detected: ${stepRef} nm`;
+                lbl.style.color = "var(--success)";
+            }
+        } else if (stepRef !== null) {
+            lbl.innerText = `Step detected (Ref): ${stepRef} nm`;
+        } else if (stepCell !== null) {
+            lbl.innerText = `Step detected (Cell): ${stepCell} nm`;
+        }
+    }
+
+    // ==========================================
+    // 5. Moteur de Calcul
+    // ==========================================
+    function calculateArrays() {
+        let minW = parseFloat(document.getElementById('param-min').value);
+        let maxW = parseFloat(document.getElementById('param-max').value);
+        let stepUser = parseFloat(document.getElementById('param-step').value);
+
+        if(!SR_REF_CONST.trim() || !AM15G_CONST.trim()) {
+            alert("Erreur : Les constantes de référence sont vides dans le code source HTML.");
+            throw new Error("Missing Constants");
+        }
+
+        let srRef = parseConstantsString(SR_REF_CONST);
+        let am15g = parseConstantsString(AM15G_CONST);
+
+        let wlRaw = state.cellData.wl;
+        let icRaw = state.cellData.curr;
+
+        let stepCellRaw = Math.round(npMedian(npDiff(wlRaw)) * 100) / 100;
+        let isInterpolated = Math.abs(stepUser - stepCellRaw) > 0.01;
+
+        // Calculs RAW
+        let irRaw = npInterp(wlRaw, state.refData.wl, state.refData.curr);
+        let srRRaw = npInterp(wlRaw, srRef.wl, srRef.val);
+        let amRaw = npInterp(wlRaw, am15g.wl, am15g.val);
+
+        let eqeRaw = [], srCRaw = [], jDensRaw = [], intJRaw = [0], intCalcRaw = 0;
+
+        for (let i = 0; i < wlRaw.length; i++) {
+            let pInc = irRaw[i] / srRRaw[i];
+            let src = icRaw[i] / pInc;
+            srCRaw.push(src);
+
+            let eqe = (src * HC_J_NM / E_CHARGE) / wlRaw[i] * 100;
+            eqeRaw.push(eqe);
+
+            let jDens = src * amRaw[i] * 0.1;
+            jDensRaw.push(jDens);
+
+            if (i > 0) {
+                let maskPrev = (wlRaw[i-1] >= minW && wlRaw[i-1] <= maxW) ? jDensRaw[i-1] : 0;
+                let maskCurr = (wlRaw[i] >= minW && wlRaw[i] <= maxW) ? jDens : 0;
+                intCalcRaw += 0.5 * (maskCurr + maskPrev) * (wlRaw[i] - wlRaw[i-1]);
+            }
+            if(i>0) intJRaw.push(intCalcRaw);
+        }
+
+        let result = {
+            isInterpolated, minW, maxW,
+            wlRaw, eqeRaw, srCRaw, jDensRaw, intJRaw,
+            totalJsc: intJRaw[intJRaw.length - 1]
+        };
+
+        if (isInterpolated) {
+            let wlInterp = floatRange(Math.min(...wlRaw), Math.max(...wlRaw), stepUser);
+            let icInterp = npInterp(wlInterp, wlRaw, icRaw);
+            let irInterp = npInterp(wlInterp, state.refData.wl, state.refData.curr);
+            let srRInterp = npInterp(wlInterp, srRef.wl, srRef.val);
+            let amInterp = npInterp(wlInterp, am15g.wl, am15g.val);
+
+            let eqeInterp = [], srCInterp = [], jDensInterp = [], intJInterp = [0], intCalcInterp = 0;
+
+            for (let i = 0; i < wlInterp.length; i++) {
+                let pInc = irInterp[i] / srRInterp[i];
+                let src = icInterp[i] / pInc;
+                srCInterp.push(src);
+
+                let eqe = (src * HC_J_NM / E_CHARGE) / wlInterp[i] * 100;
+                eqeInterp.push(eqe);
+
+                let jDens = src * amInterp[i] * 0.1;
+                jDensInterp.push(jDens);
+
+                if (i > 0) {
+                    let maskPrev = (wlInterp[i-1] >= minW && wlInterp[i-1] <= maxW) ? jDensInterp[i-1] : 0;
+                    let maskCurr = (wlInterp[i] >= minW && wlInterp[i] <= maxW) ? jDens : 0;
+                    intCalcInterp += 0.5 * (maskCurr + maskPrev) * (wlInterp[i] - wlInterp[i-1]);
+                }
+                if(i>0) intJInterp.push(intCalcInterp);
+            }
+
+            result.wlInterp = wlInterp;
+            result.eqeInterp = eqeInterp;
+            result.srCInterp = srCInterp;
+            result.jDensInterp = jDensInterp;
+            result.intJInterp = intJInterp;
+            result.totalJsc = intJInterp[intJInterp.length - 1];
+        }
+
+        return result;
+    }
+
+    function updateJsc() {
+        if (!state.refData || !state.cellData) return;
+        try {
+            state.lastCalc = calculateArrays();
+            
+            // UI Updates
+            document.getElementById('jsc-result').innerText = `Jsc: ${state.lastCalc.totalJsc.toFixed(3)} mA/cm²`;
+            document.getElementById('btn-exp-data').disabled = false;
+            document.getElementById('btn-exp-sheet').disabled = false;
+
+            // Plot Updates
+            let c = state.lastCalc;
+            let wl_plot = c.isInterpolated ? c.wlInterp : c.wlRaw;
+            let eqe_plot = c.isInterpolated ? c.eqeInterp : c.eqeRaw;
+            let int_j_plot = c.isInterpolated ? c.intJInterp : c.intJRaw;
+
+            // Ligne EQE
+            let traceEQE = {
+                x: wl_plot, y: eqe_plot,
+                type: 'scatter', mode: 'lines',
+                line: {color: '#555555', width: 2.5}
+            };
+
+            // Ligne Jsc (en pointillés : 'dash')
+            let traceJSC = {
+                x: wl_plot, y: int_j_plot,
+                type: 'scatter', mode: 'lines',
+                line: {color: '#555555', width: 2.5, dash: 'dash'},
+                yaxis: 'y2'
+            };
+
+            // Mise à jour de la zone X en fonction des inputs
+            layoutOrigin.xaxis.range = [c.minW, c.maxW];
+
+            Plotly.react('plot-div', [traceEQE, traceJSC], layoutOrigin, plotConfig);
+
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // ==========================================
+    // 6. Exports
+    // ==========================================
+    function downloadString(filename, content) {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function exportStringData(filename, str) {
+        downloadString(filename, str);
+    }
+
+    function exportMergedData(type) {
+        let data = type === 'ref' ? state.refData : state.cellData;
+        if (!data) return;
+        let content = `Wavelength(nm)\t${type === 'ref' ? 'Ref' : 'Cell'}_Current(A)\n`;
+        for (let i=0; i<data.wl.length; i++) {
+            content += `${data.wl[i].toFixed(3)}\t${data.curr[i].toExponential(4)}\n`;
+        }
+        let fname = type === 'ref' ? "Merged_Ref_Current.csv" : `${state.cellName}_Merged_Cell_Current.csv`;
+        downloadString(fname, content);
+    }
+
+    function exportCSV() {
+        if (!state.lastCalc) return;
+        const c = state.lastCalc;
+        let content = "";
+
+        if (!c.isInterpolated) {
+            content += "Wavelength(nm)\tEQE(%)\tCell_Responsivity(A/W)\tJsc(mA/cm2/nm)\tInt_Jsc(mA/cm2)\n";
+            for (let i = 0; i < c.wlRaw.length; i++) {
+                content += `${c.wlRaw[i].toFixed(3)}\t${c.eqeRaw[i].toFixed(4)}\t${c.srCRaw[i].toFixed(4)}\t${c.jDensRaw[i].toFixed(6)}\t${c.intJRaw[i].toFixed(5)}\n`;
+            }
+        } else {
+            content += "Wavelength_Raw(nm)\tEQE_Raw(%)\tCell_Resp_Raw(A/W)\t\tWavelength_Interp(nm)\tEQE_Interp(%)\tCell_Resp_Interp(A/W)\tJsc_Interp(mA/cm2/nm)\tInt_Jsc_Interp(mA/cm2)\n";
+            let maxLen = Math.max(c.wlRaw.length, c.wlInterp.length);
+            for (let i = 0; i < maxLen; i++) {
+                let row = [];
+                row.push(i < c.wlRaw.length ? c.wlRaw[i].toFixed(3) : "");
+                row.push(i < c.wlRaw.length ? c.eqeRaw[i].toFixed(4) : "");
+                row.push(i < c.wlRaw.length ? c.srCRaw[i].toFixed(4) : "");
+                row.push(""); // espace
+                row.push(i < c.wlInterp.length ? c.wlInterp[i].toFixed(3) : "");
+                row.push(i < c.wlInterp.length ? c.eqeInterp[i].toFixed(4) : "");
+                row.push(i < c.wlInterp.length ? c.srCInterp[i].toFixed(4) : "");
+                row.push(i < c.wlInterp.length ? c.jDensInterp[i].toFixed(6) : "");
+                row.push(i < c.wlInterp.length ? c.intJInterp[i].toFixed(5) : "");
+                content += row.join("\t") + "\n";
+            }
+        }
+        downloadString(`EQE_${state.cellName}.csv`, content);
+    }
+
+    function exportCalculationSheet() {
+        if (!state.lastCalc) return;
+        const c = state.lastCalc;
+        
+        let srRef = parseConstantsString(SR_REF_CONST);
+        let am15g = parseConstantsString(AM15G_CONST);
+        let wlRaw = state.cellData.wl;
+        let icRaw = state.cellData.curr;
+
+        let irAligned = npInterp(wlRaw, state.refData.wl, state.refData.curr);
+        let srRAligned = npInterp(wlRaw, srRef.wl, srRef.val);
+        let amAligned = npInterp(wlRaw, am15g.wl, am15g.val);
+        let stepCellRaw = Math.round(npMedian(npDiff(wlRaw)) * 100) / 100;
+
+        let header = `Constants\th (m2.kg.s-1)\t${H_PLANCK.toExponential(8)}\n\tc(m.s-1)\t${C_LIGHT.toFixed(2)}\n\thc(J.nm)\t${HC_J_NM.toExponential(8)}\n\te(C)\t${E_CHARGE.toExponential(9)}\n\tIntegration step(nm)\t${stepCellRaw}\n\n`;
+        header += "\thc/λ\t\t\t\tRef_Current/Ref_Responsivity\tIncident Power/Energy per Photon\t\t\t\t\t\tCell_Current/Incident Power\tAM1.5G×Cell_Responsivity×0.1\tIntegration\n";
+        header += "Wavelength(nm)\tEnergy per Photon (J/Photon)\tAM1.5G(W/m2/nm)\tRef_Current(A)\tRef_Responsivity(A/W)\tIncident Power (W)\tPhoton/s\t\tCell_Current(A)\tElectron/s\t\tEQE(%)\tCell_Responsivity(A/W)\tJsc_density(mA/cm2/nm)\tInt_Jsc(mA/cm2)\n";
+
+        let content = header;
+        for (let i = 0; i < wlRaw.length; i++) {
+            let ePhot = HC_J_NM / wlRaw[i];
+            let pInc = irAligned[i] / srRAligned[i];
+            let photS = pInc / ePhot;
+            let elecS = icRaw[i] / E_CHARGE;
+            let eqeCalc = (elecS / photS) * 100;
+
+            let row = [
+                wlRaw[i].toFixed(3), ePhot.toExponential(6), amAligned[i].toFixed(4),
+                irAligned[i].toExponential(4), srRAligned[i].toFixed(4), pInc.toExponential(4),
+                photS.toExponential(4), "", icRaw[i].toExponential(4), elecS.toExponential(4),
+                "", eqeCalc.toFixed(4), c.srCRaw[i].toFixed(4), c.jDensRaw[i].toFixed(6), c.intJRaw[i].toFixed(5)
+            ];
+            content += row.join("\t") + "\n";
+        }
+        
+        downloadString(`${state.cellName}_Calculation_Sheet.csv`, content);
+    }
 </script>
+
 </body>
 </html>
